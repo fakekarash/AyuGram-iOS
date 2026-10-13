@@ -1,0 +1,72 @@
+name: AyuGram iOS baseline IPA (manual)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ayugram-baseline-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  baseline:
+    # versions.json pins the darwin-arm64 Bazel checksum, not the Intel binary.
+    runs-on: macos-26
+    timeout-minutes: 330
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          submodules: false
+          fetch-depth: 1
+
+      - name: Check macOS, select Xcode and verify pinned Bazel
+        run: python3 build-system/ayugram_ci.py preflight
+
+      - name: Initialize exact submodule revisions
+        run: |
+          set -euo pipefail
+          # Relative URLs would otherwise point into the fork owner's account.
+          git config submodule.submodules/rlottie/rlottie.url https://github.com/TelegramMessenger/rlottie.git
+          git config submodule.submodules/TgVoipWebrtc/tgcalls.url https://github.com/TelegramMessenger/tgcalls.git
+          git submodule update --init --recursive --jobs 4
+          git submodule status --recursive > "$RUNNER_TEMP/ayugram-submodules.txt"
+          cat "$RUNNER_TEMP/ayugram-submodules.txt"
+          if grep -Eq '^[-+U]' "$RUNNER_TEMP/ayugram-submodules.txt"; then
+            echo '::error::A submodule is missing, conflicted or at the wrong revision'
+            exit 1
+          fi
+          df -h .
+
+      - name: Build unmodified client with upstream fake signing material
+        env:
+          TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
+          TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+        run: python3 -u build-system/ayugram_ci.py build
+
+      - name: Validate device IPA and record build provenance
+        run: python3 build-system/ayugram_ci.py verify
+
+      - name: Upload verified IPA
+        id: artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ayugram-baseline-ipa-${{ github.run_number }}-${{ github.run_attempt }}
+          path: |
+            build/ayugram-baseline/Telegram.ipa
+            build/ayugram-baseline/manifest.json
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
+      - name: Link artifact
+        env:
+          ARTIFACT_URL: ${{ steps.artifact.outputs.artifact-url }}
+        run: |
+          printf 'Baseline IPA validated and uploaded: %s\n' "$ARTIFACT_URL" >> "$GITHUB_STEP_SUMMARY"
+          printf 'Installation, re-signing and push notifications have NOT been tested.\n' >> "$GITHUB_STEP_SUMMARY"
