@@ -124,8 +124,9 @@ def build():
             run("security", "set-keychain-settings", "-lut", "21600", keychain)
             run("security", "unlock-keychain", "-p", password, keychain)
             run("security", "list-keychains", "-d", "user", "-s", keychain, *original_keychains)
-            for certificate in ("fake-codesigning/certs/SelfSigned.p12",
-                                "fake-codesigning/certs/Public.cer", "AppleWWDRCAG3.cer"):
+            # SelfSigned.p12 already contains its public certificate. Importing
+            # Public.cer afterwards makes `security import` fail with duplicate-item.
+            for certificate in ("fake-codesigning/certs/SelfSigned.p12", "AppleWWDRCAG3.cer"):
                 run("security", "import", str(ROOT / "build-system" / certificate),
                     "-k", keychain, "-P", "", "-T", "/usr/bin/codesign", "-T", "/usr/bin/security")
             run("security", "set-key-partition-list", "-S", "apple-tool:,apple:", "-s",
