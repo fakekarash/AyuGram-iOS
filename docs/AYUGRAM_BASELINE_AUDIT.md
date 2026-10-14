@@ -1,194 +1,171 @@
-# AyuGram iOS: проверочная сборка, 2026-10-13
+# AyuGram iOS: итог baseline smoke-сборки, 2026-10-14
 
-## Продолжение после разрешения владельца
+## Результат GitHub Actions
 
-После первоначальной подготовки владелец поручил самостоятельно настроить GitHub
-и запустить сборку. Создан публичный форк
-[`fakekarash/AyuGram-iOS`](https://github.com/fakekarash/AyuGram-iOS), исходный HEAD
-совпал с локальным `f1dd7a2dbd02cbbf513e75d5695d8d36d1cf5838`.
-Оба Repository secrets добавлены через интерфейс GitHub без записи значений в
-файлы/вывод инструментов. Старый `CI` отключён (`disabled_manually`).
+Ручной workflow **AyuGram iOS baseline IPA (manual)** успешно завершился:
 
-Опубликованы CI-helper (commit `17ce5c1faa4c35cb18b4d352acae565d8f07e729`)
-и ручной workflow (commit `db5e634996e328aad800987fed7ab620da688772`).
-Оба файла побайтно сверены с локальными. Ручной
-[run №1](https://github.com/fakekarash/AyuGram-iOS/actions/runs/38464997255)
-создан на втором commit; на момент этой записи он в очереди.
-Это ещё не успешная сборка и не подтверждение наличия IPA.
+- [run №3](https://github.com/fakekarash/AyuGram-iOS/actions/runs/38618649899),
+  commit `536a6e6ff0498ca7baa9f125a46b52adc5e6575a`;
+- job `baseline`: success, 50 мин 7 с; весь run: 50 мин 20 с;
+- сборка исходного клиента: 48 мин 54 с;
+- Artifact: `ayugram-baseline-ipa-3-1`, ID `11924037449`, 79 216 864 байта;
+- Artifact не просрочен; GitHub указал срок хранения до
+  `2026-10-21T19:41:01Z`;
+- SHA256 ZIP Artifact:
+  `1a992c5b0375e3ab71b5bbce066352433acb11d9dffdc3a2a461c9f102de7ec6`.
 
-Локальный `origin` сохранён, добавлен отдельный remote `fork`. Выполнен fetch
-только для чтения опубликованных коммитов; локальная ветка и первоначальные
-изменения пользователя не перезаписаны. Разделы ниже описывают первоначальный
-аудит ДО публикации, а инструкция запуска сохранена для последующих запусков.
+Artifact скачан и проверен локально. Его SHA256 совпал с digest GitHub, CRC ZIP
+исправен. В архиве ровно два файла:
 
-## Фактически проверено локально
+| Файл | Размер |
+| --- | ---: |
+| `Telegram.ipa` | 79 214 237 байт |
+| `manifest.json` | 2 371 байт |
 
-- Ветка `master`, HEAD `f1dd7a2dbd02cbbf513e75d5695d8d36d1cf5838`
-  (`Merge branch 'beta'`). `git status` не показывал расхождения с локальным
-  `origin/master`; свежий fetch не выполнялся.
-- `origin` пока указывает на `https://github.com/TelegramMessenger/Telegram-iOS.git`,
-  а не на личный форк. Remotes не менялись.
-- `git config --local --get core.longpaths` вернул `true`.
-- Все 13 подмодулей из `git submodule status --recursive` инициализированы,
-  соответствуют gitlink-коммитам, имеют чистый status. Обновлять их не потребовалось.
-  Проверка была рекурсивной; дополнительных вложенных gitlink-подмодулей не обнаружено.
-- Прочитаны `README.md`, `versions.json`, оба существовавших workflow,
-  сборщик `Make.py`, конфигурация и правила упаковки `Telegram/BUILD`.
-- Пройден actionlint **v1.7.12** для нового workflow. ShellCheck и Pyflakes
-  не установлены и были отключены; это не полная проверка всех внешних команд.
-- Пройдены синтаксическая проверка Python, проверка закреплённых версий,
-  11 проверок CI-helper (невалидные API-параметры, фильтрация stdout/stderr,
-  отсутствие API-переменных у дочернего процесса, распространение ошибки команды,
-  отсутствующий/невалидный IPA, manifest для синтетического ZIP).
-  В последней проверке `lipo` подменён: это НЕ проверка реального Mach-O/IPA.
-- Аргументы сборки сверены с объявлениями argparse в исходном `Make.py`.
-- Локальный preflight ожидаемо завершился ошибкой: требуется macOS 26 ARM64.
-  Даже `Make.py build --help` на Windows падает при импорте macOS-модуля `fcntl`.
-  Изменения upstream ради запуска на Windows не вносились.
+`Telegram.ipa` также проходит полную CRC-проверку. SHA256 IPA
+`27d7cf5b7b51f0e7ea89a54cc08c2f1b3d390c65a45af3a2f2a628f859136bfc`
+совпадает со значением в `manifest.json`; размер тоже совпадает. Проверены
+`CFBundleIdentifier=ph.telegra.Telegraph`, платформа `iPhoneOS`, непустой Mach-O
+исполняемый файл и ARM64 через `lipo` на runner. В IPA находятся шесть штатных
+расширений: Share, NotificationContent, NotificationService, Intents, Widget и
+BroadcastUpload.
 
-**GitHub Actions не запускался. Реальной smoke-сборки, IPA в Artifacts и проверки
-установки на iPhone пока нет.** Коммит, push, Release, создание secrets и другие
-внешние изменения не выполнялись. Ghost Mode, Anti-Recall и другие функции не добавлялись.
+Это **re-signable baseline IPA исходного Telegram**, собранная с публичными
+upstream fake-профилями. Перед установкой её требуется переподписать. Установка,
+запуск, авторизация, push-уведомления и refresh на реальном iPhone не проверялись.
+Ghost Mode, Anti-Recall и другие функции AyuGram не добавлялись.
 
-## Сохранённые изменения и новые файлы
+## История smoke-запусков
 
-Следующие изменения существовали ДО этой работы и оставлены без изменения:
+1. [Run №1](https://github.com/fakekarash/AyuGram-iOS/actions/runs/38464997255)
+   завершился ошибкой до компиляции: повторный импорт публичного сертификата
+   приводил к `SecKeychainItemImport: The specified item already exists`.
+   Artifact отсутствует.
+2. [Run №2](https://github.com/fakekarash/AyuGram-iOS/actions/runs/38465563318)
+   полностью собрал клиент, но упал в проверке из-за порядка аргументов `lipo`
+   в Xcode 26.6. Artifact отсутствует.
+3. Run №3 после минимального исправления валидатора успешно собрал, проверил и
+   загрузил IPA. Логи показывают ровно два загруженных файла и тот же digest,
+   который получен при локальной проверке скачанного Artifact.
 
-- `.gitignore` — два исключения для локальных конфигураций;
-- `.github/workflows/ayugram-smoke-ipa.yml`;
-- `build-system/ayugram-development-configuration.example.json`;
-- `docs/AYUGRAM_WINDOWS_CI.md`.
+## Состояние репозитория
 
-Для сохранения этого черновика добавлены отдельные файлы:
+- Локальная ветка: `master`; локальный HEAD не менялся:
+  `f1dd7a2dbd02cbbf513e75d5695d8d36d1cf5838`.
+- Локальная ветка не коммитилась и не сбрасывалась. Существовавшие изменения
+  пользователя сохранены.
+- `origin` остаётся `https://github.com/TelegramMessenger/Telegram-iOS.git`.
+- Добавлен remote `fork`: `https://github.com/fakekarash/AyuGram-iOS.git`.
+- `fork/master`: `536a6e6ff0498ca7baa9f125a46b52adc5e6575a`.
+- Для репозитория установлен `core.longpaths=true`.
+- Все 13 рекурсивных подмодулей инициализированы, стоят на gitlink-коммитах и
+  имеют чистый status:
 
-- `.github/workflows/ayugram-baseline-ipa.yml` — **AyuGram iOS baseline IPA (manual)**;
-- `build-system/ayugram_ci.py` — проверка окружения, сборка с фильтрацией логов,
-  временная тестовая подпись и проверка IPA;
-- `docs/AYUGRAM_BASELINE_AUDIT.md` — этот отчёт и порядок первого запуска.
+| Подмодуль | Commit |
+| --- | --- |
+| `build-system/bazel-rules/apple_support` | `872de7149cfbcaaf854c7867e98b6d4798ba0d27` |
+| `build-system/bazel-rules/rules_apple` | `485016eb5b0948cc17307064e7977a6d68e94046` |
+| `build-system/bazel-rules/rules_swift` | `dd10a2497a691237eb9716586acee1a9c4fe3e59` |
+| `build-system/bazel-rules/rules_xcodeproj` | `f6a54168d19f917d0630e7d4efa8f2f9fa0ddc36` |
+| `submodules/TgVoipWebrtc/tgcalls` | `a024eaabf13c189d9577a14fb244bd242825ac96` |
+| `submodules/rlottie/rlottie` | `53c9679069eb6b6513ccc3c892ef4f4a760658da` |
+| `submodules/tlottie/tlottie` | `31f1b542f88e7b4be9a01e749920d857535fc715` |
+| `third-party/dav1d/dav1d` | `330e20672e85f9de1678dccd6957845898ef57a1` |
+| `third-party/libvpx/libvpx` | `e7bfd8b6c230a6824e7fd1efa2378a7322986128` |
+| `third-party/mtproto-engine` | `0de759a36cbb50c1e98560c1ffa38590d317b0fc` |
+| `third-party/td/td` | `e894536b2f46caad93f997448d2daff9431b19dd` |
+| `third-party/wallet-engine/wallet-engine` | `e59e0d89d7ee90c388bf36e3334c5b276f396697` |
+| `third-party/webrtc/webrtc` | `6513c71d6c80311d69a0a6b9c09fcf32cfbeb247` |
+
+## Локальные файлы
+
+Изменения, которые существовали до baseline-аудита и не перезаписывались:
+
+- `.gitignore` — modified;
+- `.github/workflows/ayugram-smoke-ipa.yml` — untracked;
+- `build-system/ayugram-development-configuration.example.json` — untracked;
+- `docs/AYUGRAM_WINDOWS_CI.md` — untracked.
+
+Добавленные для baseline smoke-сборки файлы:
+
+- `.github/workflows/ayugram-baseline-ipa.yml`;
+- `build-system/ayugram_ci.py`;
+- `docs/AYUGRAM_BASELINE_AUDIT.md`.
+
+Новый workflow и helper опубликованы в форке отдельными web-коммитами. Локальный
+индекс и локальный HEAD при этом не изменялись.
 
 ## Закреплённое окружение
 
-| Компонент | Требование |
+| Компонент | Требование / фактическое значение run №3 |
 | --- | --- |
-| macOS | major **26**, как в `versions.json`; patch образа GitHub может меняться |
-| Runner | **`macos-26` (ARM64)**; не `macos-latest`, `macos-13` или Intel |
-| Xcode для сборки | **26.6**, `/Applications/Xcode_26.6.app/Contents/Developer` |
-| `deploy_xcode` | **26.2**, отдельное поле; не замена Xcode сборки |
-| Bazel | **9.2.0**, бинарник `darwin-arm64` |
+| Runner | `macos-26`, ARM64 |
+| macOS | major 26; фактически `26.6.2` |
+| Xcode | `26.6`; фактически `Xcode 26.6`, build `17F113` |
+| `deploy_xcode` | `26.2` — отдельное поле `versions.json` |
+| Bazel | `9.2.0`, `darwin-arm64` |
 | SHA256 Bazel | `dd466352a3e4d3581b8898740ee1ff208866ccbe25f8d367c5dcb950219587e6` |
-| Конфигурация приложения | upstream `Telegram/Telegram`, `release_arm64`, версия **13.0** |
+| Telegram | версия `13.0`, `release_arm64` |
 
-Xcode 26.6 указан в [официальном ARM64-образе GitHub](https://github.com/actions/runner-images/blob/main/images/macos/macos-26-arm64-Readme.md).
-Соответствие `macos-26` архитектуре ARM64 подтверждается
-[справочником runner](https://docs.github.com/en/actions/reference/runners/github-hosted-runners).
-SHA256 из `versions.json` совпал с опубликованным
-[checksum Bazel 9.2.0 ARM64](https://github.com/bazelbuild/bazel/releases/download/9.2.0/bazel-9.2.0-darwin-arm64.sha256).
-Сам бинарник Bazel здесь не запускался. CI скачивает его, сверяет SHA256 и версию
-до получения API-secrets. Проверки Xcode/Bazel не обходятся; смена pins требует
-явного пересмотра helper и runner.
+Workflow запускается только через `workflow_dispatch`, имеет
+`permissions: contents: read`, не реагирует на push и не создаёт Release. Старый
+workflow `CI` (`.github/workflows/build.yml`) отключён вручную. API GitHub
+подтверждает состояние `disabled_manually`; в форке нет GitHub Releases.
 
-## Как работает новый workflow
+## GitHub Secrets
 
-Только `workflow_dispatch`; нет push, pull_request, расписания, Release или прав
-записи в contents. Checkout не сохраняет GitHub credentials. Подмодули получают
-закреплённые коммиты, без `--remote` или `--force`. Два относительных upstream URL
-переопределяются только в локальной git-конфигурации runner на публичные
-`TelegramMessenger/rlottie.git` и `TelegramMessenger/tgcalls.git`.
+Нужны ровно два Repository secrets с точными именами:
 
-Ровно два пользовательских Repository secrets:
+- `TELEGRAM_API_ID`
+- `TELEGRAM_API_HASH`
 
-| Secret | Значение |
-| --- | --- |
-| `TELEGRAM_API_ID` | Собственный положительный числовой API ID приложения |
-| `TELEGRAM_API_HASH` | Собственный API hash из 32 hex-символов |
+Они уже созданы в форке через GitHub UI. Значения не записаны в репозиторий,
+manifest или отчёт и не выводились в логи. Apple ID, пароль, код 2FA, личные
+сертификаты и provisioning profiles не запрашивались и не сохранялись.
 
-Получить их можно на [my.telegram.org/apps](https://my.telegram.org/apps).
-Значения не передаются через workflow inputs или аргументы Make/Bazel, не
-записываются в версионируемые файлы и фильтруются перед выводом логов дочерних
-команд. Конфигурация создаётся в `RUNNER_TEMP` с ограниченными правами и удаляется
-в `finally`. Make.py также временно создаёт игнорируемый `build-input/.../variables.bzl`;
-helper удаляет его после сборки. Build cache и сырые логи не загружаются.
-Секреты по природе клиента входят в скомпилированный бинарник: IPA не является
-способом хранить их в тайне от получателя. Сам IPA публикуется только как Actions
-Artifact с доступом согласно настройкам репозитория.
+## Как запустить снова
 
-Используются ТОЛЬКО публичные upstream fake-сертификаты и профили, уже находящиеся
-в репозитории. Они импортируются в отдельный временный keychain runner, который
-удаляется по завершении. Apple ID, пароль, 2FA, личный `.p12`, Apple provisioning
-profiles или Apple secrets от пользователя не нужны. Новые сертификаты не создаются.
+1. Открыть репозиторий `fakekarash/AyuGram-iOS`.
+2. Нажать **Actions**.
+3. В списке выбрать **AyuGram iOS baseline IPA (manual)**.
+4. Нажать **Run workflow**, оставить ветку `master` и ещё раз нажать
+   **Run workflow**.
+5. После зелёного завершения открыть run → **Artifacts** →
+   `ayugram-baseline-ipa-<run_number>-<run_attempt>`.
 
-Сохраняются upstream bundle/team IDs для соответствия fake profiles. Полученный
-артефакт — промежуточный клиент Telegram для проверки сборки, требующий переподписи,
-не готовый подписанный релиз AyuGram. Шесть iOS-расширений включены штатными правилами;
-Watch app не запрашивается (upstream default). Список реально упакованных расширений
-будет в `manifest.json`.
+Не запускать старый `CI`: он отключён из-за неподходящего `macos-13`, push-trigger
+и автоматического Release.
 
-CI проверяет CRC ZIP, единственное основное приложение, bundle ID, device platform,
-непустой исполняемый файл и ARM64 через `lipo`. Затем загружает только `Telegram.ipa`
-и `manifest.json` с SHA256, commit, версиями и подмодулями. Ошибка сборки/проверки
-блокирует upload. Успех означает **зелёный run + существующий Artifact с IPA**,
-а не только созданный YAML или успешный checkout. Проверка настоящей подписи,
-запуска, авторизации Telegram и уведомлений на устройстве остаётся отдельной.
+## Ограничения AltStore, SideStore и Sideloadly
 
-## Первый запуск в GitHub — только после разрешённой публикации файлов
+- Бесплатный Apple Account обычно требует повторной подписи каждые **7 дней**.
+  Для Personal Team действуют лимиты до **10 App ID** за период и до **3
+  установленных приложений** на устройстве.
+- Основное приложение и шесть расширений потенциально занимают **7 App ID**.
+  AltStore или SideStore также занимают слот приложения. Инструмент переподписи
+  может удалить часть расширений, чтобы сэкономить App ID, но соответствующие
+  функции перестанут работать.
+- **AltStore Classic** требует доступного AltServer для установки и refresh по
+  USB/Wi-Fi.
+- **SideStore** требует pairing и корректного локального/VPN-соединения для
+  refresh; лимиты бесплатного аккаунта сохраняются.
+- **Sideloadly** выполняет повторную подпись с компьютера; auto-refresh зависит
+  от работающего daemon и доступности устройства.
+- Push/APNs нельзя считать работающими после простой переподписи. Нужны профиль
+  с `aps-environment`, допустимый App ID/topic и серверная APNs-авторизация.
+- App Groups, Keychain access groups, Associated Domains, iCloud, Siri и другие
+  entitlement должны соответствовать новой подписи и provisioning profile.
+  Их удаление или несовпадение может отключить расширения, общий контейнер,
+  push и другие функции либо привести к ошибке установки.
 
-1. Использовать собственный форк; текущий `origin` указывает на upstream.
-   Подготовленные файлы пока только локальные. Их commit/push и настройка remote
-   требуют отдельного указания владельца.
-2. **Перед push в `master` отключить старый `CI` (`build.yml`) в своём форке:**
-   Actions → CI → меню `…` → Disable workflow. Он по-прежнему содержит push-trigger,
-   `macos-13` и автоматический Create Release. Этот существующий файл не менялся.
-   Если Actions ещё отключены, не включать старый CI при первой настройке форка.
-3. После отдельно разрешённой публикации поместить новый workflow и helper в
-   default branch. GitHub показывает ручной запуск, когда workflow есть в default
-   branch: [инструкция GitHub](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow).
-4. Settings → Secrets and variables → Actions → **New repository secret**:
-   создать `TELEGRAM_API_ID` и `TELEGRAM_API_HASH`. Ничего из Apple не добавлять.
-5. Actions → **AyuGram iOS baseline IPA (manual)** → **Run workflow** → выбрать
-   нужную ветку → **Run workflow**. Не выбирать старые `CI` и `AyuGram iOS smoke IPA`.
-6. Дождаться полного зелёного run. Открыть его Summary → **Artifacts** →
-   `ayugram-baseline-ipa-<run_number>-<run_attempt>`. Скачать архив и убедиться,
-   что внутри есть непустой `Telegram.ipa` и `manifest.json`. Хранение — 7 дней.
+## Проверено и не проверено
 
-## Ограничения установки и пока не проверенные предположения
+Фактически проверено: macOS/Xcode/Bazel, 13 подмодулей, полная компиляция baseline,
+ZIP/IPA CRC, bundle ID, iPhoneOS platform, непустой executable, ARM64, шесть
+расширений, SHA256 IPA, manifest, успешная загрузка и последующее скачивание
+Artifact. Проверено отсутствие Releases и отключение старого workflow.
 
-- Бесплатный Apple Account: профиль действует **7 дней**, требуется регулярная
-  повторная подпись/refresh. До **10 App ID**, истекающих через 7 дней, и до
-  **3 установленных приложений** на устройстве. Это ограничения Apple, а не
-  конкретного IPA: [Apple Personal Team](https://developer.apple.com/help/account/basics/about-your-developer-account).
-- Каждое расширение расходует отдельный App ID. В текущем `Telegram/BUILD` шесть:
-  Share, NotificationContent, NotificationService, Intents, Widget, BroadcastUpload.
-  Основное приложение вместе с ними потенциально занимает **7 App ID**, плюс
-  идентификаторы уже установленных приложений/установщика. Удаление расширений
-  инструментом переподписи экономит IDs ценой соответствующих функций:
-  [AltStore App IDs](https://faq.altstore.io/altstore-classic/app-ids).
-- **AltStore Classic:** сам занимает один из трёх слотов; обычный refresh требует
-  доступного AltServer (Wi-Fi/USB). Проверить работу фонового обновления до истечения
-  7 дней: [AltServer](https://faq.altstore.io/altstore-classic/altserver).
-- **SideStore:** сам входит в лимит трёх приложений; настроить pairing и локальное
-  сетевое подключение согласно текущей инструкции, проверить первый refresh.
-  Лимиты App ID и 7 дней сохраняются:
-  [FAQ](https://docs.sidestore.io/docs/faq), [установка](https://docs.sidestore.io/docs/installation/install).
-- **Sideloadly:** повторная подпись с компьютера; auto-refresh зависит от работающего
-  daemon и доступности устройства. Бесплатная подпись тоже на 7 дней:
-  [официальный FAQ](https://sideloadly.io/).
-- **APNs/push нельзя обещать.** Нужны допустимый `aps-environment`, профиль с push
-  capability и серверная авторизация для соответствующего app/topic. Чужие upstream
-  entitlements и fake profiles не предоставляют этих прав; простой re-sign не
-  настраивает инфраструктуру Telegram для нового App ID. См.
-  [регистрацию APNs](https://developer.apple.com/documentation/usernotifications/registering-your-app-with-apns)
-  и [отправку APNs](https://developer.apple.com/documentation/usernotifications/sending-notification-requests-to-apns).
-- App Groups, Keychain access groups, Associated Domains, iCloud, Siri,
-  communication/filtering notifications и другие entitlement должны соответствовать
-  новой подписи и профилю. Исходные group/team IDs нельзя безусловно переносить.
-  Инструмент может их удалить/заменить; возможны ошибки установки, общий контейнер
-  расширений и потеря части функций. Siri/iCloud уже отключены в smoke-конфигурации,
-  остальные ограничения реальны даже при успешной сборке. См.
-  [возможности Apple](https://developer.apple.com/help/account/reference/supported-capabilities-ios/).
-- Достаточность CPU/RAM/диска стандартного ARM64 runner и лимита 330 минут неизвестна
-  до первого запуска. Полная сборка Telegram тяжёлая; версия окружения подходит,
-  но это не гарантия достаточности ресурсов. При нехватке нужен более мощный
-  ARM64 macOS 26 runner с Xcode 26.6, после отдельного решения владельца.
-
-До успешной базовой CI-сборки не переходить к функциям AyuGram. Затем отдельно
-проверить переподпись, установку, запуск и авторизацию на конкретной версии iOS.
+Не проверено: переподпись конкретной версией AltStore/SideStore/Sideloadly,
+установка и запуск на iPhone, вход в Telegram, 7-дневный refresh, push/APNs и
+поведение entitlement после переподписи. Эти пункты остаются отдельными
+проверками на устройстве и не являются результатом текущего CI.
