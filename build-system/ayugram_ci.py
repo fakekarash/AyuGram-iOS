@@ -170,7 +170,7 @@ def verify():
             binary = Path(temp) / "executable"
             with archive.open(executable) as source, binary.open("wb") as target:
                 shutil.copyfileobj(source, target)
-            subprocess.run(["lipo", "-verify_arch", "arm64", str(binary)], check=True)
+            subprocess.run(["lipo", str(binary), "-verify_arch", "arm64"], check=True)
         extensions = sorted(n for n in names if re.fullmatch(r"Payload/[^/]+\.app/PlugIns/[^/]+\.appex/Info\.plist", n))
     manifest = {
         "commit": output("git", "rev-parse", "HEAD"),
