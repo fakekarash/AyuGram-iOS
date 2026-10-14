@@ -56,7 +56,9 @@ Ghost Mode, Anti-Recall и другие функции AyuGram не добавл
   пользователя сохранены.
 - `origin` остаётся `https://github.com/TelegramMessenger/Telegram-iOS.git`.
 - Добавлен remote `fork`: `https://github.com/fakekarash/AyuGram-iOS.git`.
-- `fork/master`: `536a6e6ff0498ca7baa9f125a46b52adc5e6575a`.
+- Проверенная baseline-сборка создана с commit
+  `536a6e6ff0498ca7baa9f125a46b52adc5e6575a`; последующие commits меняют только
+  этот итоговый отчёт.
 - Для репозитория установлен `core.longpaths=true`.
 - Все 13 рекурсивных подмодулей инициализированы, стоят на gitlink-коммитах и
   имеют чистый status:
