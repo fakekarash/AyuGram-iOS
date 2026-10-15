@@ -101,6 +101,9 @@ def build():
     if platform.system() != "Darwin" or os.environ.get("GITHUB_ACTIONS") != "true":
         raise RuntimeError("Build is restricted to the ephemeral macOS Actions runner")
     api_id, api_hash = api_credentials()
+    app_specific_url_scheme = os.environ.get("AYUGRAM_APP_SPECIFIC_URL_SCHEME", "tg")
+    if not re.fullmatch(r"[a-z][a-z0-9+.-]*", app_specific_url_scheme):
+        raise RuntimeError("Invalid application URL scheme")
     os.umask(0o077)
     original_keychains = shlex.split(output("security", "list-keychains", "-d", "user"))
     password = secrets.token_hex(24)
@@ -113,7 +116,7 @@ def build():
             "bundle_id": "ph.telegra.Telegraph", "team_id": "C67CF9S4VU",
             "api_id": api_id, "api_hash": api_hash,
             "app_center_id": "0", "is_internal_build": "true", "is_appstore_build": "false",
-            "appstore_id": "0", "app_specific_url_scheme": "tg", "premium_iap_product_id": "",
+            "appstore_id": "0", "app_specific_url_scheme": app_specific_url_scheme, "premium_iap_product_id": "",
             "enable_siri": False, "enable_icloud": False,
         }
         config.write_text(json.dumps(configuration), encoding="utf-8")
