@@ -51,7 +51,11 @@ jobs:
       - name: Install and launch in iOS Simulator
         run: python3 build-system/ayugram_simulator_ci.py launch
 
+      - name: Verify application UI rendered
+        run: swift build-system/validate_simulator_screenshot.swift build/ayugram-simulator/results/ayugram-simulator.png
+
       - name: Upload simulator evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ayugram-simulator-smoke-${{ github.run_number }}-${{ github.run_attempt }}
