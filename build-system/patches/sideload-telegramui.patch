@@ -22,3 +22,18 @@ index 2910e44..9f52b0b 100644
 +            try? FileManager.default.createDirectory(at: localContainerUrl, withIntermediateDirectories: true)
 +            maybeAppGroupUrl = localContainerUrl
 +        }
+@@ -708,13 +722,14 @@ public final class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotifi
+         let isUITest = CommandLine.arguments.contains("--ui-test")
+ 
+         let rootPath: String
+         if isUITest {
+             let testDataPath = appGroupUrl.path + "/telegram-ui-tests-data"
+             let _ = try? FileManager.default.removeItem(atPath: testDataPath)
+             rootPath = rootPathForBasePath(testDataPath)
+         } else {
+             rootPath = rootPathForBasePath(appGroupUrl.path)
+         }
++        try? FileManager.default.createDirectory(at: URL(fileURLWithPath: rootPath), withIntermediateDirectories: true)
+         if !isUITest {
+             performAppGroupUpgrades(appGroupPath: appGroupUrl.path, rootPath: rootPath)
+         }
