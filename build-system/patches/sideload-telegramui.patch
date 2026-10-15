@@ -2,7 +2,7 @@ diff --git a/Sources/AppDelegate.swift b/Sources/AppDelegate.swift
 index 2910e44..9f52b0b 100644
 --- a/Sources/AppDelegate.swift
 +++ b/Sources/AppDelegate.swift
-@@ -562,4 +562,18 @@ public final class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotifi
+@@ -562,4 +562,19 @@ public final class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotifi
          try! PasscodeEnvironment.shared.configure(PasscodeConfiguration(appGroupIdentifier: appGroupName, processRole: .mainApp, biometricKeychainService: walletBiometricKeychainService), privateAccessGroup: {
              BuildConfig.keychainAccessGroup(baseAppBundleId: baseAppBundleId)
          })
@@ -14,15 +14,16 @@ index 2910e44..9f52b0b 100644
 +            // Free and ad-hoc sideload profiles generally cannot carry Telegram's
 +            // App Group entitlement. Keep the main app usable in its own sandbox;
 +            // the sideload package deliberately omits extensions that need sharing.
-+            // Resolve this path directly from the application sandbox. On some
-+            // headless Simulator hosts, the user-domain lookup can return nil
-+            // when the simulated uid is absent from the host password database.
-+            let localContainerUrl = URL(fileURLWithPath: NSHomeDirectory(), isDirectory: true)
++            // Derive the data container from its writable temporary directory.
++            // NSHomeDirectory can resolve to a host path on headless Simulator
++            // runners when the simulated uid is absent from the password database.
++            let localContainerUrl = FileManager.default.temporaryDirectory
++                .deletingLastPathComponent()
 +                .appendingPathComponent("Library/Application Support", isDirectory: true)
 +            try? FileManager.default.createDirectory(at: localContainerUrl, withIntermediateDirectories: true)
 +            maybeAppGroupUrl = localContainerUrl
 +        }
-@@ -708,13 +722,14 @@ public final class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotifi
+@@ -708,13 +723,14 @@ public final class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotifi
          let isUITest = CommandLine.arguments.contains("--ui-test")
  
          let rootPath: String
