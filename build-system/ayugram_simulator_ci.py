@@ -116,7 +116,8 @@ def launch():
     if not match:
         raise RuntimeError("simctl did not return an application process id")
     pid = int(match.group(1))
-    time.sleep(15)
+    smoke_window_seconds = 30
+    time.sleep(smoke_window_seconds)
     processes = output("xcrun", "simctl", "spawn", udid, "/bin/ps", "-ax")
     if not re.search(r"^\s*" + str(pid) + r"\s", processes, re.MULTILINE):
         raise RuntimeError("AyuGram process exited during the simulator smoke window")
@@ -136,13 +137,14 @@ def launch():
         "display_name": info.get("CFBundleDisplayName"),
         "supported_platforms": info.get("CFBundleSupportedPlatforms"),
         "launch_output": launch_output,
-        "pid_after_15_seconds": pid,
+        "smoke_window_seconds": smoke_window_seconds,
+        "pid_after_smoke_window": pid,
         "screenshot": screenshot.name,
         "device_installation_tested": False,
         "simulator_launch_tested": True,
     }
     (RESULTS / "simulator-result.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
-    print("Simulator launch remained alive for 15 seconds; pid=" + str(pid))
+    print("Simulator launch remained alive for " + str(smoke_window_seconds) + " seconds; pid=" + str(pid))
 
 
 if __name__ == "__main__":
