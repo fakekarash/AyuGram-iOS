@@ -104,6 +104,9 @@ def build():
     app_specific_url_scheme = os.environ.get("AYUGRAM_APP_SPECIFIC_URL_SCHEME", "tg")
     if not re.fullmatch(r"[a-z][a-z0-9+.-]*", app_specific_url_scheme):
         raise RuntimeError("Invalid application URL scheme")
+    build_configuration = os.environ.get("AYUGRAM_BUILD_CONFIGURATION", "release_arm64")
+    if build_configuration not in ("release_arm64", "release_sim_arm64"):
+        raise RuntimeError("Invalid AyuGram build configuration")
     os.umask(0o077)
     original_keychains = shlex.split(output("security", "list-keychains", "-d", "user"))
     password = secrets.token_hex(24)
@@ -139,7 +142,7 @@ def build():
                 "--bazelUserRoot=" + str(Path(os.environ["RUNNER_TEMP"]) / "ayugram-bazel"),
                 "build", "--configurationPath=" + str(config),
                 "--codesigningInformationPath=build-system/fake-codesigning",
-                "--configuration=release_arm64", "--buildNumber=" + os.environ["GITHUB_RUN_NUMBER"],
+                "--configuration=" + build_configuration, "--buildNumber=" + os.environ["GITHUB_RUN_NUMBER"],
                 "--outputBuildArtifactsPath=" + str(ARTIFACTS))
         finally:
             # Make.py generates an ignored Starlark configuration containing API values.
