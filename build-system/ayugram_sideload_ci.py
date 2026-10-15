@@ -30,8 +30,10 @@ def output(*args):
 
 def apply_patches():
     for repository, patch_path in PATCHES:
-        if not (repository / ".git").exists():
-            raise RuntimeError("Required submodule is not initialized")
+        if not repository.is_dir():
+            raise RuntimeError("Required source directory is missing")
+        if not patch_path.is_file():
+            raise RuntimeError("Required compatibility patch is missing")
         subprocess.run(
             ["git", "-C", str(repository), "apply", "--check", str(patch_path)],
             check=True,
