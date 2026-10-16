@@ -145,6 +145,108 @@ def copy_runtime_diagnostics(udid, result_dir, app_group_control):
             for path in sorted(root.rglob("*")):
                 relative = path.relative_to(container)
                 if path.is_file():
-                    inventory.append(str(relative) + "\t" + str(piÑ ¹ÍÑÐ ¤¹ÍÑ}Í¥é¤¤(±Íè(¥¹Ù¹Ñ½Éä¹ÁÁ¹¡ÍÑÈ¡É±Ñ¥Ù¤¬¼¤(¡ÉÍÕ±Ñ}¥È¼¡±°¬µ½¹Ñ¥¹Èµ¥¹Ù¹Ñ½Éä¹ÑáÐ¤¤¹ÝÉ¥Ñ}ÑáÐ (q¸¹©½¥¸¡¥¹Ù¹Ñ½Éä¤¬ q¸¥¥¹Ù¹Ñ½Éä±Í¤°(¹½¥¹ôÕÑ´à°(¤((±½ÌôÉ½½Ð¼±½Ì¼ÁÀµ±½Ì(±½}¥±Ìô±¥ÍÐ¡±½Ì¹±½ ±½´¨¤¤¥±½Ì¹¥Í}¥È ¤±Ímt(Í}µÉ­ÉÌôì(±½É}¥±}½Õ¹Ðè±¸¡±½}¥±Ì¤°(±½É}Ñ½Ñ±}åÑÌèÍÕ´¡ÁÑ ¹ÍÑÐ ¤¹ÍÑ}Í¥é½ÈÁÑ ¥¸±½}¥±Ì¤°(É¥Ù}½¹ÑáÐè±Í°(É¥Ù}ÕÑ¡½É¥é}½¹ÑáÐè±Í°(É¥Ù}Õ¹ÕÑ¡½É¥é}½¹ÑáÐè±Í°(Á½ÍÑ½á}Ñ¥Ù¥Ñäè±Í°(ô(½ÈÁÑ ¥¸±½}¥±Ìè(½¹Ñ¹ÐôÁÑ ¹É}ÑáÐ¡¹½¥¹ôÕÑ´à°ÉÉ½ÉÌôÉÁ±¤(Í}µÉ­ÉÍlÉ¥Ù}½¹ÑáÐtðôÉ¥Ù½¹ÑáÐ¥¸½¹Ñ¹Ð(Í}µÉ­ÉÍlÉ¥Ù}ÕÑ¡½É¥é}½¹ÑáÐtðôÉ¥Ù½¹ÑáÐ=ÁÑ¥½¹°¥¸½¹Ñ¹Ð(Í}µÉ­ÉÍlÉ¥Ù}Õ¹ÕÑ¡½É¥é}½¹ÑáÐtðôÉ¥ÙÕÑ ½¹ÑáÐ=ÁÑ¥½¹°¥¸½¹Ñ¹Ð(Í}µÉ­ÉÍlÁ½ÍÑ½á}Ñ¥Ù¥ÑätðômA½ÍÑ½át¥¸½¹Ñ¹Ð(¡ÉÍÕ±Ñ}¥È¼¡±°¬µÍÑÉÑÕÀµµÉ­ÉÌ¹©Í½¸¤¤¹ÝÉ¥Ñ}ÑáÐ (©Í½¸¹ÕµÁÌ¡Í}µÉ­ÉÌ°¥¹¹ÐôÈ¤¬q¸°(¹½¥¹ôÕÑ´à°(¤(()±Õ¹ ¡µ½¤è(ÁÁ}É½ÕÁ}½¹ÑÉ½°ôµ½ôôÁÁÉ½ÕÀµ½¹ÑÉ½°(ÉÍÕ±Ñ}¥ÈôIMU1QL¼µ½(¥ÉÍÕ±Ñ}¥È¹á¥ÍÑÌ ¤è(Í¡ÕÑ¥°¹ÉµÑÉ¡ÉÍÕ±Ñ}¥È¤(ÉÍÕ±Ñ}¥È¹µ­¥È¡ÁÉ¹ÑÌõQÉÕ¤(ÁÀ°¥¹¼ôÁÉÁÉ}ÁÀ¡ÁÁ}É½ÕÁ}½¹ÑÉ½°õÁÁ}É½ÕÁ}½¹ÑÉ½°¤(Í¥¹ÑÕÉôÍÕÁÉ½ÍÌ¹ÉÕ¸ (l½Í¥¸°µ°´µ¹Ñ¥Ñ±µ¹ÑÌ°è´°ÍÑÈ¡ÁÀ¥t°(ÑáÐõQÉÕ°(ÍÑ½ÕÐõÍÕÁÉ½ÍÌ¹A%A°(ÍÑÉÈõÍÕÁÉ½ÍÌ¹MQ=UP°(¡¬õ±Í°(¤(¡ÉÍÕ±Ñ}¥È¼½Í¥¸µ¹Ñ¥Ñ±µ¹ÑÌ¹ÑáÐ¤¹ÝÉ¥Ñ}ÑáÐ¡Í¥¹ÑÕÉ¹ÍÑ½ÕÐ°¹½¥¹ôÕÑ´à¤(Ù¥ôÍ±Ñ}Í¥µÕ±Ñ½È ¤(Õ¥ôÙ¥lÕ¥t(ÍÕÁÉ½ÍÌ¹ÉÕ¸¡láÉÕ¸°Í¥µÑ°°½½Ð°Õ¥t°¡¬õ±Í¤(ÍÕÁÉ½ÍÌ¹ÉÕ¸¡láÉÕ¸°Í¥µÑ°°½½ÑÍÑÑÕÌ°Õ¥°µt°¡¬õQÉÕ¤(ÍÕÁÉ½ÍÌ¹ÉÕ¸¡láÉÕ¸°Í¥µÑ°°Õ¹¥¹ÍÑ±°°Õ¥°	U91}%t°¡¬õ±Í¤(ÍÕÁÉ½ÍÌ¹ÉÕ¸¡láÉÕ¸°Í¥µÑ°°¥¹ÍÑ±°°Õ¥°ÍÑÈ¡ÁÀ¥t°¡¬õQÉÕ¤(±Õ¹¡}½ÕÑÁÕÐô½ÕÑÁÕÐ áÉÕ¸°Í¥µÑ°°±Õ¹ °Õ¥°	U91}%¤(µÑ ôÉ¹ÍÉ ¡ÈéqÌ¨¡lÀ´åt¬¤°±Õ¹¡}½ÕÑÁÕÐ¤(¥¹½ÐµÑ è(É¥ÍIÕ¹Ñ¥µÉÉ½È Í¥µÑ°¥¹½ÐÉÑÕÉ¸¸ÁÁ±¥Ñ¥½¸ÁÉ½ÍÌ¥¤(Á¥ô¥¹Ð¡µÑ ¹É½ÕÀ Ä¤¤(Íµ½­}Ý¥¹½Ý}Í½¹ÌôÌÀ(Ñ¥µ¹Í±À¡Íµ½­}Ý¥¹½Ý}Í½¹Ì¤(ÁÉ½ÍÍÌô½ÕÑÁÕÐ áÉÕ¸°Í¥µÑ°°ÍÁÝ¸°Õ¥°½¥¸½ÁÌ°µà¤(¥¹½ÐÉ¹ÍÉ ¡ÈyqÌ¨¬ÍÑÈ¡Á¥¤¬ÈqÌ°ÁÉ½ÍÍÌ°É¹5U1Q%1%9¤è(É¥ÍIÕ¹Ñ¥µÉÉ½È åÕÉ´ÁÉ½ÍÌá¥ÑÕÉ¥¹Ñ¡Í¥µÕ±Ñ½ÈÍµ½­Ý¥¹½Ü¤(ÍÉ¹Í¡½ÐôÉÍÕ±Ñ}¥È¼åÕÉ´µÍ¥µÕ±Ñ½È¹Á¹(ÍÕÁÉ½ÍÌ¹ÉÕ¸¡láÉÕ¸°Í¥µÑ°°¥¼°Õ¥°ÍÉ¹Í¡½Ð°ÍÑÈ¡ÍÉ¹Í¡½Ð¥t°¡¬õQÉÕ¤(±½}ÁÑ ôÉÍÕ±Ñ}¥È¼åÕÉ´µÍ¥µÕ±Ñ½È¹±½(Ý¥Ñ ±½}ÁÑ ¹½Á¸ Ü°¹½¥¹ôÕÑ´à¤ÌÑÉÐè(ÍÕÁÉ½ÍÌ¹ÉÕ¸¡l(áÉÕ¸°Í¥µÑ°°ÍÁÝ¸°Õ¥°±½°Í¡½Ü°´µÍÑå±°½µÁÐ°(´µ±ÍÐ°É´°´µÁÉ¥Ñ°ÁÉ½ÍÌôôQ±É´°(t°ÍÑ½ÕÐõÑÉÐ°ÍÑÉÈõÍÕÁÉ½ÍÌ¹MQ=UP°ÑáÐõQÉÕ°¡¬õ±Í¤(½Áå}ÉÕ¹Ñ¥µ}¥¹½ÍÑ¥Ì¡Õ¥°ÉÍÕ±Ñ}¥È°ÁÁ}É½ÕÁ}½¹ÑÉ½°¤(ÉÍÕ±Ðôì(½µµ¥Ðè½ÕÑÁÕÐ ¥Ð°ÉØµÁÉÍ°!¤°(Ù¥èÙ¥l¹µt°(Õ¥èÕ¥°(Õ¹±}¥è	U91}%°(¥ÍÁ±å}¹µè¥¹¼¹Ð 
-	Õ¹±¥ÍÁ±å9µ¤°(ÍÕÁÁ½ÉÑ}Á±Ñ½ÉµÌè¥¹¼¹Ð 
-	Õ¹±MÕÁÁ½ÉÑA±Ñ½ÉµÌ¤°(±Õ¹¡}½ÕÑÁÕÐè±Õ¹¡}½ÕÑÁÕÐ°(Íµ½­}Ý¥¹½Ý}Í½¹ÌèÍµ½­}Ý¥¹½Ý}Í½¹Ì°(Á¥}ÑÉ}Íµ½­}Ý¥¹½ÜèÁ¥°(ÍÉ¹Í¡½ÐèÍÉ¹Í¡½Ð¹¹µ°(µ½èµ½°(ÁÁ}É½ÕÁ}½¹ÑÉ½±}¹Ñ¥Ñ±µ¹ÐèÁÁ}É½ÕÁ}½¹ÑÉ½°°(Ù¥}¥¹ÍÑ±±Ñ¥½¹}ÑÍÑè±Í°(Í¥µÕ±Ñ½É}±Õ¹¡}ÑÍÑèQÉÕ°(ô(¡ÉÍÕ±Ñ}¥È¼Í¥µÕ±Ñ½ÈµÉÍÕ±Ð¹©Í½¸¤¹ÝÉ¥Ñ}ÑáÐ¡©Í½¸¹ÕµÁÌ¡ÉÍÕ±Ð°¥¹¹ÐôÈ¤¬q¸°¹½¥¹ôÕÑ´à¤(ÁÉ¥¹Ð¡µ½¬±Õ¹ Éµ¥¹±¥Ù½È¬ÍÑÈ¡Íµ½­}Ý¥¹½Ý}Í½¹Ì¤¬Í½¹ÌìÁ¥ô¬ÍÑÈ¡Á¥¤¤(()¥}}¹µ}|ôô}}µ¥¹}|è(½Ì¹¡¥È¡I==P¤(ÑÉäè(¥±¸¡ÍåÌ¹ÉØ¤ôôÈ¹ÍåÌ¹ÉÙlÅtôôÕ¥±è(Õ¥± ¤(±¥±¸¡ÍåÌ¹ÉØ¤ôôÌ¹ÍåÌ¹ÉÙlÅtôô±Õ¹ ¹ÍåÌ¹ÉÙlÉt¥¸ Í¥±½°ÁÁÉ½ÕÀµ½¹ÑÉ½°¤è(±Õ¹ ¡ÍåÌ¹ÉÙlÉt¤(±Íè(É¥ÍIÕ¹Ñ¥µÉÉ½È UÍèåÕÉµ}Í¥µÕ±Ñ½É}¤¹ÁäÕ¥±ð±Õ¹ Í¥±½ñÁÁÉ½ÕÀµ½¹ÑÉ½°¤(áÁÐIÕ¹Ñ¥µÉÉ½ÈÌÉÉ½Èè(ÁÉ¥¹Ð èéÉÉ½Èèè¬ÍÑÈ¡ÉÉ½È¤¤(ÍåÌ¹á¥Ð Ä¤(áÁÐáÁÑ¥½¸è(ÁÉ¥¹Ð èéÉÉ½ÈèéM¥µÕ±Ñ½ÈÍµ½­ÑÍÐ¥±ì¹¼±Õ¹ ÍÕÍÌ¥Ì±¥µ¸¤(ÍåÌ¹á¥Ð Ä¤
+                    inventory.append(str(relative) + "\t" + str(path.stat().st_size))
+                else:
+                    inventory.append(str(relative) + "/")
+        (result_dir / (label + "-container-inventory.txt")).write_text(
+            "\n".join(inventory) + ("\n" if inventory else ""),
+            encoding="utf-8",
+        )
+
+        logs = root / "logs" / "app-logs"
+        log_files = list(logs.glob("log-*")) if logs.is_dir() else []
+        safe_markers = {
+            "logger_file_count": len(log_files),
+            "logger_total_bytes": sum(path.stat().st_size for path in log_files),
+            "received_context": False,
+            "received_authorized_context": False,
+            "received_unauthorized_context": False,
+            "postbox_activity": False,
+        }
+        for path in log_files:
+            content = path.read_text(encoding="utf-8", errors="replace")
+            safe_markers["received_context"] |= "received context" in content
+            safe_markers["received_authorized_context"] |= "received context Optional" in content
+            safe_markers["received_unauthorized_context"] |= "received auth context Optional" in content
+            safe_markers["postbox_activity"] |= "[Postbox]" in content
+        (result_dir / (label + "-startup-markers.json")).write_text(
+            json.dumps(safe_markers, indent=2) + "\n",
+            encoding="utf-8",
+        )
+
+
+def launch(mode):
+    app_group_control = mode == "appgroup-control"
+    result_dir = RESULTS / mode
+    if result_dir.exists():
+        shutil.rmtree(result_dir)
+    result_dir.mkdir(parents=True)
+    app, info = prepare_app(app_group_control=app_group_control)
+    signature = subprocess.run(
+        ["codesign", "-d", "--entitlements", ":-", str(app)],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    (result_dir / "codesign-entitlements.txt").write_text(signature.stdout, encoding="utf-8")
+    device = select_simulator()
+    udid = device["udid"]
+    subprocess.run(["xcrun", "simctl", "boot", udid], check=False)
+    subprocess.run(["xcrun", "simctl", "bootstatus", udid, "-b"], check=True)
+    subprocess.run(["xcrun", "simctl", "uninstall", udid, BUNDLE_ID], check=False)
+    subprocess.run(["xcrun", "simctl", "install", udid, str(app)], check=True)
+    launch_output = output("xcrun", "simctl", "launch", udid, BUNDLE_ID)
+    match = re.search(r":\s*([0-9]+)$", launch_output)
+    if not match:
+        raise RuntimeError("simctl did not return an application process id")
+    pid = int(match.group(1))
+    smoke_window_seconds = 30
+    time.sleep(smoke_window_seconds)
+    processes = output("xcrun", "simctl", "spawn", udid, "/bin/ps", "-ax")
+    if not re.search(r"^\s*" + str(pid) + r"\s", processes, re.MULTILINE):
+        raise RuntimeError("AyuGram process exited during the simulator smoke window")
+    screenshot = result_dir / "ayugram-simulator.png"
+    subprocess.run(["xcrun", "simctl", "io", udid, "screenshot", str(screenshot)], check=True)
+    log_path = result_dir / "ayugram-simulator.log"
+    with log_path.open("w", encoding="utf-8") as target:
+        subprocess.run([
+            "xcrun", "simctl", "spawn", udid, "log", "show", "--style", "compact",
+            "--last", "2m", "--predicate", 'process == "Telegram"',
+        ], stdout=target, stderr=subprocess.STDOUT, text=True, check=False)
+    copy_runtime_diagnostics(udid, result_dir, app_group_control)
+    result = {
+        "commit": output("git", "rev-parse", "HEAD"),
+        "device": device["name"],
+        "udid": udid,
+        "bundle_id": BUNDLE_ID,
+        "display_name": info.get("CFBundleDisplayName"),
+        "supported_platforms": info.get("CFBundleSupportedPlatforms"),
+        "launch_output": launch_output,
+        "smoke_window_seconds": smoke_window_seconds,
+        "pid_after_smoke_window": pid,
+        "screenshot": screenshot.name,
+        "mode": mode,
+        "app_group_control_entitlement": app_group_control,
+        "device_installation_tested": False,
+        "simulator_launch_tested": True,
+    }
+    (result_dir / "simulator-result.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    print(mode + " launch remained alive for " + str(smoke_window_seconds) + " seconds; pid=" + str(pid))
+
+
+if __name__ == "__main__":
+    os.chdir(ROOT)
+    try:
+        if len(sys.argv) == 2 and sys.argv[1] == "build":
+            build()
+        elif len(sys.argv) == 3 and sys.argv[1] == "launch" and sys.argv[2] in ("sideload", "appgroup-control"):
+            launch(sys.argv[2])
+        else:
+            raise RuntimeError("Usage: ayugram_simulator_ci.py build | launch sideload|appgroup-control")
+    except RuntimeError as error:
+        print("::error::" + str(error))
+        sys.exit(1)
+    except Exception:
+        print("::error::Simulator smoke test failed; no launch success is claimed.")
+        sys.exit(1)
