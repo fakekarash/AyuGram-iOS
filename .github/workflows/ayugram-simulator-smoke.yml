@@ -52,34 +52,7 @@ jobs:
         run: python3 build-system/ayugram_simulator_ci.py launch sideload
 
       - name: Verify sideload application UI rendered
-        id: sideload_ui
-        continue-on-error: true
         run: swift build-system/validate_simulator_screenshot.swift build/ayugram-simulator/results/sideload/ayugram-simulator.png
-
-      - name: Install and launch App Group control
-        run: python3 build-system/ayugram_simulator_ci.py launch appgroup-control
-
-      - name: Verify App Group control UI rendered
-        id: appgroup_control_ui
-        continue-on-error: true
-        run: swift build-system/validate_simulator_screenshot.swift build/ayugram-simulator/results/appgroup-control/ayugram-simulator.png
-
-      - name: Classify simulator result
-        env:
-          SIDELOAD_OUTCOME: ${{ steps.sideload_ui.outcome }}
-          APPGROUP_CONTROL_OUTCOME: ${{ steps.appgroup_control_ui.outcome }}
-        run: |
-          set -euo pipefail
-          if [[ "$SIDELOAD_OUTCOME" == success ]]; then
-            echo 'Sideload configuration rendered application UI.'
-            exit 0
-          fi
-          if [[ "$APPGROUP_CONTROL_OUTCOME" == success ]]; then
-            echo '::error::The App Group control rendered UI, but the entitlement-free sideload configuration remained blank.'
-          else
-            echo '::error::Both the sideload configuration and App Group control remained blank.'
-          fi
-          exit 1
 
       - name: Upload simulator evidence
         if: always()
