@@ -63,7 +63,7 @@ def select_simulator():
     return candidates[0]
 
 
-def prepare_app(app_group_control=False):
+def prepare_app():
     ipa = ARTIFACTS / "Telegram.ipa"
     app_dir = ARTIFACTS / "SimulatorPayload"
     if not ipa.is_file():
@@ -98,19 +98,11 @@ def prepare_app(app_group_control=False):
         "CFBundleURLSchemes": ["ayugram"],
     }]
     info_path.write_bytes(plistlib.dumps(info, fmt=plistlib.FMT_BINARY, sort_keys=False))
-    codesign = ["codesign", "--force", "--deep", "--sign", "-"]
-    if app_group_control:
-        entitlements_path = ARTIFACTS / "simulator-app-group-entitlements.plist"
-        entitlements_path.write_bytes(plistlib.dumps({
-            "com.apple.security.application-groups": ["group." + BUNDLE_ID],
-        }, fmt=plistlib.FMT_XML, sort_keys=True))
-        codesign.extend(["--entitlements", str(entitlements_path)])
-    codesign.append(str(app))
-    subprocess.run(codesign, check=True)
+    subprocess.run(["codesign", "--force", "--deep", "--sign", "-", str(app)], check=True)
     return app, info
 
 
-def copy_runtime_diagnostics(udid, result_dir, app_group_control):
+def copy_runtime_diagnostics(udid, result_dir):
     containers = []
     try:
         data_container = Path(output(
@@ -123,23 +115,8 @@ def copy_runtime_diagnostics(udid, result_dir, app_group_control):
             encoding="utf-8",
         )
 
-    if app_group_control:
-        group_id = "group." + BUNDLE_ID
-        try:
-            group_container = Path(output(
-                "xcrun", "simctl", "get_app_container", udid, BUNDLE_ID, group_id
-            ))
-            containers.append(("app-group", group_container))
-        except subprocess.CalledProcessError as error:
-            (result_dir / "app-group-container-error.txt").write_text(
-                "simctl get_app_container failed: " + str(error) + "\n",
-                encoding="utf-8",
-            )
-
     for label, container in containers:
-        root = container / "Library" / "Application Support" / "telegram-data"
-        if label == "app-group":
-            root = container / "telegram-data"
+        root = container / "Library" / "Application Support" / "AyuGram" / "telegram-data"
         inventory = []
         if root.exists():
             for path in sorted(root.rglob("*")):
@@ -176,12 +153,11 @@ def copy_runtime_diagnostics(udid, result_dir, app_group_control):
 
 
 def launch(mode):
-    app_group_control = mode == "appgroup-control"
     result_dir = RESULTS / mode
     if result_dir.exists():
         shutil.rmtree(result_dir)
     result_dir.mkdir(parents=True)
-    app, info = prepare_app(app_group_control=app_group_control)
+    app, info = prepare_app()
     signature = subprocess.run(
         ["codesign", "-d", "--entitlements", ":-", str(app)],
         text=True,
@@ -214,7 +190,7 @@ def launch(mode):
             "xcrun", "simctl", "spawn", udid, "log", "show", "--style", "compact",
             "--last", "2m", "--predicate", 'process == "Telegram"',
         ], stdout=target, stderr=subprocess.STDOUT, text=True, check=False)
-    copy_runtime_diagnostics(udid, result_dir, app_group_control)
+    copy_runtime_diagnostics(udid, result_dir)
     result = {
         "commit": output("git", "rev-parse", "HEAD"),
         "device": device["name"],
@@ -227,7 +203,7 @@ def launch(mode):
         "pid_after_smoke_window": pid,
         "screenshot": screenshot.name,
         "mode": mode,
-        "app_group_control_entitlement": app_group_control,
+        "app_group_entitlement": False,
         "device_installation_tested": False,
         "simulator_launch_tested": True,
     }
@@ -240,10 +216,10 @@ if __name__ == "__main__":
     try:
         if len(sys.argv) == 2 and sys.argv[1] == "build":
             build()
-        elif len(sys.argv) == 3 and sys.argv[1] == "launch" and sys.argv[2] in ("sideload", "appgroup-control"):
+        elif len(sys.argv) == 3 and sys.argv[1] == "launch" and sys.argv[2] == "sideload":
             launch(sys.argv[2])
         else:
-            raise RuntimeError("Usage: ayugram_simulator_ci.py build | launch sideload|appgroup-control")
+            raise RuntimeError("Usage: ayugram_simulator_ci.py build | launch sideload")
     except RuntimeError as error:
         print("::error::" + str(error))
         sys.exit(1)

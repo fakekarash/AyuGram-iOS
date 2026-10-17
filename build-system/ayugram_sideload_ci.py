@@ -22,6 +22,22 @@ PATCHES = (
     (ROOT / "submodules" / "TelegramUI", ROOT / "build-system" / "patches" / "sideload-telegramui.patch"),
     (ROOT / "submodules" / "PasscodeCore", ROOT / "build-system" / "patches" / "sideload-passcodecore.patch"),
 )
+PATCH_MARKERS = (
+    (
+        ROOT / "submodules" / "TelegramUI" / "Sources" / "AppDelegate.swift",
+        (
+            "if FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName) != nil {",
+            "CFFIXED_USER_HOME",
+            ".write-probe",
+            "appendingPathComponent(\"AyuGram\"",
+            "createDirectory(at: URL(fileURLWithPath: rootPath)",
+        ),
+    ),
+    (
+        ROOT / "submodules" / "PasscodeCore" / "Sources" / "Passcode.swift",
+        ("omitting", "privateAccessGroup() : sharedAccessGroup"),
+    ),
+)
 
 
 def output(*args):
@@ -29,20 +45,44 @@ def output(*args):
 
 
 def apply_patches():
+    commands = []
     for repository, patch_path in PATCHES:
         if not repository.is_dir():
             raise RuntimeError("Required source directory is missing")
         if not patch_path.is_file():
             raise RuntimeError("Required compatibility patch is missing")
+        repository_prefix = repository.relative_to(ROOT).as_posix()
+        command = ["git", "-C", str(ROOT), "apply", "--unidiff-zero", "--directory=" + repository_prefix, str(patch_path)]
         subprocess.run(
-            ["git", "-C", str(repository), "apply", "--check", str(patch_path)],
+            command[:4] + ["--check"] + command[4:],
             check=True,
         )
+        commands.append(command)
+
+    for command in commands:
         subprocess.run(
-            ["git", "-C", str(repository), "apply", str(patch_path)],
+            command,
             check=True,
         )
-    print("Applied reviewed App Group fallback and private-keychain patches")
+
+    for source_path, markers in PATCH_MARKERS:
+        content = source_path.read_text(encoding="utf-8")
+        if any(marker not in content for marker in markers):
+            raise RuntimeError("A compatibility patch reported success without changing its target")
+        relative_path = str(source_path.relative_to(ROOT))
+        changed = subprocess.run(
+            ["git", "-C", str(ROOT), "diff", "--quiet", "--", relative_path],
+            check=False,
+        )
+        if changed.returncode == 0:
+            raise RuntimeError("A compatibility patch left its target unchanged")
+        if changed.returncode != 1:
+            raise RuntimeError("Unable to verify a compatibility patch target")
+    subprocess.run(
+        ["git", "-C", str(ROOT), "diff", "--check", "--", *[str(path.relative_to(ROOT)) for path, _ in PATCH_MARKERS]],
+        check=True,
+    )
+    print("Applied and verified App Group fallback and private-keychain patches")
 
 
 def replace_bundle_strings(value):
