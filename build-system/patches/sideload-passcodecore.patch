@@ -1,22 +1,12 @@
 diff --git a/Sources/Passcode.swift b/Sources/Passcode.swift
-index 5bd21fe..da7f547 100644
+index d1ff0f65..33da6366 100644
 --- a/Sources/Passcode.swift
 +++ b/Sources/Passcode.swift
-@@ -124,7 +124,16 @@ final class PasscodeKeychain: PasscodeStorage {
-             kSecAttrSynchronizable as String: false
-         ]
-         #if !os(macOS)
+@@ -127 +127,6 @@ final class PasscodeKeychain: PasscodeStorage {
 -        query[kSecAttrAccessGroup as String] = try account.hasPrefix("biometric.") ? self.environment.privateAccessGroup() : self.environment.sharedAccessGroup()
-+        if account.hasPrefix("biometric.") {
-+            query[kSecAttrAccessGroup as String] = try self.environment.privateAccessGroup()
-+        } else {
-+            let sharedAccessGroup = try self.environment.sharedAccessGroup()
-+            // When a sideload profile has no App Group entitlement, omitting
-+            // kSecAttrAccessGroup selects this app's private keychain instead.
-+            if FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: sharedAccessGroup) != nil {
-+                query[kSecAttrAccessGroup as String] = sharedAccessGroup
-+            }
++        let sharedAccessGroup = try self.environment.sharedAccessGroup()
++        // Sideload builds omit extensions. If their profile has no App Group,
++        // omitting kSecAttrAccessGroup selects the main app's private keychain.
++        if FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: sharedAccessGroup) != nil {
++            query[kSecAttrAccessGroup as String] = try account.hasPrefix("biometric.") ? self.environment.privateAccessGroup() : sharedAccessGroup
 +        }
-         #endif
-         return query
-     }

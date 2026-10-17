@@ -1,11 +1,13 @@
 diff --git a/Sources/AppDelegate.swift b/Sources/AppDelegate.swift
-index 2910e44..9f52b0b 100644
+index 941074ea..081b158b 100644
 --- a/Sources/AppDelegate.swift
 +++ b/Sources/AppDelegate.swift
-@@ -562,4 +562,19 @@ public final class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotifi
-         try! PasscodeEnvironment.shared.configure(PasscodeConfiguration(appGroupIdentifier: appGroupName, processRole: .mainApp, biometricKeychainService: walletBiometricKeychainService), privateAccessGroup: {
-             BuildConfig.keychainAccessGroup(baseAppBundleId: baseAppBundleId)
-         })
+@@ -318 +318,3 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
+-        configuration.sharedContainerIdentifier = appGroupName
++        if FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName) != nil {
++            configuration.sharedContainerIdentifier = appGroupName
++        }
+@@ -565 +567,35 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
 -        let maybeAppGroupUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName)
 +        let maybeAppGroupUrl: URL?
 +        if let sharedContainerUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName) {
@@ -14,27 +16,33 @@ index 2910e44..9f52b0b 100644
 +            // Free and ad-hoc sideload profiles generally cannot carry Telegram's
 +            // App Group entitlement. Keep the main app usable in its own sandbox;
 +            // the sideload package deliberately omits extensions that need sharing.
-+            // Derive the data container from its writable temporary directory.
-+            // NSHomeDirectory can resolve to a host path on headless Simulator
-+            // runners when the simulated uid is absent from the password database.
-+            let localContainerUrl = FileManager.default.temporaryDirectory
-+                .deletingLastPathComponent()
-+                .appendingPathComponent("Library/Application Support", isDirectory: true)
-+            try? FileManager.default.createDirectory(at: localContainerUrl, withIntermediateDirectories: true)
-+            maybeAppGroupUrl = localContainerUrl
++            let environment = ProcessInfo.processInfo.environment
++            var applicationSupportCandidates = [
++                environment["CFFIXED_USER_HOME"],
++                environment["HOME"],
++                NSHomeDirectory()
++            ].compactMap { value -> URL? in
++                guard let value, !value.isEmpty else {
++                    return nil
++                }
++                return URL(fileURLWithPath: value, isDirectory: true)
++                    .appendingPathComponent("Library/Application Support", isDirectory: true)
++            })
++            applicationSupportCandidates.append(contentsOf: FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask))
++            var writableContainerUrl: URL?
++            for applicationSupportUrl in applicationSupportCandidates {
++                let candidate = applicationSupportUrl.appendingPathComponent("AyuGram", isDirectory: true)
++                do {
++                    try FileManager.default.createDirectory(at: candidate, withIntermediateDirectories: true)
++                    let writeProbe = candidate.appendingPathComponent(".write-probe", isDirectory: false)
++                    try Data([0]).write(to: writeProbe, options: .atomic)
++                    try FileManager.default.removeItem(at: writeProbe)
++                    writableContainerUrl = candidate
++                    break
++                } catch {
++                }
++            }
++            maybeAppGroupUrl = writableContainerUrl
 +        }
-@@ -708,13 +723,14 @@ public final class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotifi
-         let isUITest = CommandLine.arguments.contains("--ui-test")
- 
-         let rootPath: String
-         if isUITest {
-             let testDataPath = appGroupUrl.path + "/telegram-ui-tests-data"
-             let _ = try? FileManager.default.removeItem(atPath: testDataPath)
-             rootPath = rootPathForBasePath(testDataPath)
-         } else {
-             rootPath = rootPathForBasePath(appGroupUrl.path)
-         }
+@@ -717,0 +754 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
 +        try? FileManager.default.createDirectory(at: URL(fileURLWithPath: rootPath), withIntermediateDirectories: true)
-         if !isUITest {
-             performAppGroupUpgrades(appGroupPath: appGroupUrl.path, rootPath: rootPath)
-         }
