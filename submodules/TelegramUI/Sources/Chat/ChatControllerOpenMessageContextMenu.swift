@@ -19,6 +19,33 @@ import TelegramNotices
 import PresentationDataUtils
 import ChatPresentationInterfaceState
 
+private func ayuGramMessageHistoryText(message: EngineMessage, attribute: AyuGramMessageHistoryAttribute) -> String {
+    let formatter = DateFormatter()
+    formatter.locale = Locale.current
+    formatter.dateStyle = .short
+    formatter.timeStyle = .short
+
+    var lines: [String] = []
+    if attribute.isDeleted {
+        if attribute.deletionTimestamp != 0 {
+            lines.append("Удалено: \(formatter.string(from: Date(timeIntervalSince1970: TimeInterval(attribute.deletionTimestamp))))")
+        } else {
+            lines.append("Сообщение удалено отправителем")
+        }
+    }
+    for index in attribute.previousTexts.indices {
+        let timestamp = index < attribute.editTimestamps.count ? attribute.editTimestamps[index] : 0
+        let dateText = timestamp == 0 ? "" : " • " + formatter.string(from: Date(timeIntervalSince1970: TimeInterval(timestamp)))
+        let text = attribute.previousTexts[index].isEmpty ? "[медиа без подписи]" : String(attribute.previousTexts[index].prefix(1500))
+        lines.append("Версия \(index + 1)\(dateText)\n\(text)")
+    }
+    if !attribute.previousTexts.isEmpty && !attribute.isDeleted {
+        let currentText = message.text.isEmpty ? "[медиа без подписи]" : String(message.text.prefix(1500))
+        lines.append("Текущая версия\n\(currentText)")
+    }
+    return String(lines.joined(separator: "\n\n").prefix(8000))
+}
+
 extension ChatControllerImpl {
     func openMessageContextMenu(message: EngineMessage, selectAll: Bool, node: ASDisplayNode, frame: CGRect, anyRecognizer: UIGestureRecognizer?, location: CGPoint?) -> Void {
         if self.presentationInterfaceState.interfaceState.selectionState != nil {
@@ -63,6 +90,32 @@ extension ChatControllerImpl {
                 var (allowedReactions, _) = allowedReactionsAndStars
                 
                 var actions = actions
+                if let history = message.attributes.first(where: { $0 is AyuGramMessageHistoryAttribute }) as? AyuGramMessageHistoryAttribute, history.isDeleted || !history.previousTexts.isEmpty {
+                    if case let .list(currentItems) = actions.content {
+                        var items = currentItems
+                        let title: String
+                        if history.isDeleted {
+                            title = history.previousTexts.isEmpty ? "AyuGram: сообщение удалено" : "AyuGram: удалено • история (\(history.previousTexts.count))"
+                        } else {
+                            title = "AyuGram: история изменений (\(history.previousTexts.count))"
+                        }
+                        items.insert(.action(ContextMenuActionItem(text: title, icon: { _ in nil }, action: { [weak self] _, completion in
+                            completion(.default)
+                            guard let self else {
+                                return
+                            }
+                            let alertController = textAlertController(
+                                context: self.context,
+                                updatedPresentationData: self.updatedPresentationData,
+                                title: "AyuGram",
+                                text: ayuGramMessageHistoryText(message: message, attribute: history),
+                                actions: [TextAlertAction(type: .defaultAction, title: self.presentationData.strings.Common_OK, action: {})]
+                            )
+                            self.present(alertController, in: .window(.root))
+                        })), at: 0)
+                        actions.content = .list(items)
+                    }
+                }
                 switch actions.content {
                 case let .list(itemList):
                     if itemList.isEmpty {

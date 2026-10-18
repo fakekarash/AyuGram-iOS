@@ -219,11 +219,14 @@ def verify():
             "Ghost Mode controls for reads, stories, typing and online presence",
             "restricted-content save controls",
             "view-once preservation and AyuGram Vault",
+            "Anti-Recall for received cloud messages",
+            "local edit history with a message context-menu viewer",
         ],
         "limitations": [
             "no app extensions",
             "no push entitlement guarantee",
             "feature behavior requires an on-device test after re-signing",
+            "messages deleted before this device received them cannot be recovered",
         ],
         "device_installation_tested": False,
     }

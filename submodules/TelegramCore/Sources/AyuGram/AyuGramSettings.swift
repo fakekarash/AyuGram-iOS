@@ -57,6 +57,21 @@ public enum AyuGramSettings {
         set { self.setValue(newValue, "vaultEnabled") }
     }
 
+    public static var antiRecallEnabled: Bool {
+        get { self.value("antiRecallEnabled", default: true) }
+        set { self.setValue(newValue, "antiRecallEnabled") }
+    }
+
+    public static var editHistoryEnabled: Bool {
+        get { self.value("editHistoryEnabled", default: true) }
+        set { self.setValue(newValue, "editHistoryEnabled") }
+    }
+
+    public static var showDeletedMessageMarker: Bool {
+        get { self.value("showDeletedMessageMarker", default: true) }
+        set { self.setValue(newValue, "showDeletedMessageMarker") }
+    }
+
     public static var hideReadReceipts: Bool {
         self.ghostModeEnabled && self.hideReadReceiptsOption
     }

@@ -297,7 +297,8 @@ private func requestEditMessageInternal(accountPeerId: PeerId, postbox: Postbox,
                                                     updatedMedia = previousMessage.media
                                                 }
 
-                                                return .update(message.withUpdatedLocalTags(updatedLocalTags).withUpdatedFlags(updatedFlags).withUpdatedMedia(updatedMedia))
+                                                let updatedMessage = message.withUpdatedLocalTags(updatedLocalTags).withUpdatedFlags(updatedFlags).withUpdatedMedia(updatedMedia)
+                                                return .update(ayuGramMessagePreservingEditHistory(previous: previousMessage, updated: updatedMessage))
                                             })
                                         }
                                     case .updateNewMessage(let data):
@@ -323,7 +324,8 @@ private func requestEditMessageInternal(accountPeerId: PeerId, postbox: Postbox,
                                                     updatedMedia = previousMessage.media
                                                 }
 
-                                                return .update(message.withUpdatedLocalTags(updatedLocalTags).withUpdatedFlags(updatedFlags).withUpdatedMedia(updatedMedia))
+                                                let updatedMessage = message.withUpdatedLocalTags(updatedLocalTags).withUpdatedFlags(updatedFlags).withUpdatedMedia(updatedMedia)
+                                                return .update(ayuGramMessagePreservingEditHistory(previous: previousMessage, updated: updatedMessage))
                                             })
                                         }
                                     case .updateEditChannelMessage(let data):
@@ -349,7 +351,8 @@ private func requestEditMessageInternal(accountPeerId: PeerId, postbox: Postbox,
                                                     updatedMedia = previousMessage.media
                                                 }
 
-                                                return .update(message.withUpdatedLocalTags(updatedLocalTags).withUpdatedFlags(updatedFlags).withUpdatedMedia(updatedMedia))
+                                                let updatedMessage = message.withUpdatedLocalTags(updatedLocalTags).withUpdatedFlags(updatedFlags).withUpdatedMedia(updatedMedia)
+                                                return .update(ayuGramMessagePreservingEditHistory(previous: previousMessage, updated: updatedMessage))
                                             })
                                         }
                                     case .updateNewChannelMessage(let data):
@@ -375,7 +378,8 @@ private func requestEditMessageInternal(accountPeerId: PeerId, postbox: Postbox,
                                                     updatedMedia = previousMessage.media
                                                 }
                                                 
-                                                return .update(message.withUpdatedLocalTags(updatedLocalTags).withUpdatedFlags(updatedFlags).withUpdatedMedia(updatedMedia))
+                                                let updatedMessage = message.withUpdatedLocalTags(updatedLocalTags).withUpdatedFlags(updatedFlags).withUpdatedMedia(updatedMedia)
+                                                return .update(ayuGramMessagePreservingEditHistory(previous: previousMessage, updated: updatedMessage))
                                             })
                                         }
                                     default:

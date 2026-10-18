@@ -136,6 +136,7 @@ private var declaredEncodables: Void = {
     declareEncodable(EphemeralMessageAttribute.self, f: { EphemeralMessageAttribute(decoder: $0) })
     declareEncodable(EphemeralReplacementMessageAttribute.self, f: { EphemeralReplacementMessageAttribute(decoder: $0) })
     declareEncodable(EphemeralOutgoingMessageAttribute.self, f: { EphemeralOutgoingMessageAttribute(decoder: $0) })
+    declareEncodable(AyuGramMessageHistoryAttribute.self, f: { AyuGramMessageHistoryAttribute(decoder: $0) })
     declareEncodable(ForwardSourceInfoAttribute.self, f: { ForwardSourceInfoAttribute(decoder: $0) })
     declareEncodable(SourceReferenceMessageAttribute.self, f: { SourceReferenceMessageAttribute(decoder: $0) })
     declareEncodable(SourceAuthorInfoMessageAttribute.self, f: { SourceAuthorInfoMessageAttribute(decoder: $0) })

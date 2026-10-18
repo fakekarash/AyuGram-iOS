@@ -22,6 +22,9 @@ private enum AyuGramSetting {
     case hideStoryViews
     case hideTyping
     case stayOffline
+    case antiRecallEnabled
+    case editHistoryEnabled
+    case showDeletedMessageMarker
     case saveRestrictedContent
     case preserveViewOnceMedia
     case vaultEnabled
@@ -33,6 +36,9 @@ private struct AyuGramSettingsProxy {
     var hideStoryViews = AyuGramSettings.hideStoryViewsOption
     var hideTyping = AyuGramSettings.hideTypingOption
     var stayOffline = AyuGramSettings.stayOfflineOption
+    var antiRecallEnabled = AyuGramSettings.antiRecallEnabled
+    var editHistoryEnabled = AyuGramSettings.editHistoryEnabled
+    var showDeletedMessageMarker = AyuGramSettings.showDeletedMessageMarker
     var saveRestrictedContent = AyuGramSettings.saveRestrictedContent
     var preserveViewOnceMedia = AyuGramSettings.preserveViewOnceMedia
     var vaultEnabled = AyuGramSettings.vaultEnabled
@@ -41,6 +47,7 @@ private struct AyuGramSettingsProxy {
 private enum AyuGramSettingsSection: Int32 {
     case ghost
     case privacy
+    case antiRecall
     case media
     case links
 }
@@ -54,6 +61,11 @@ private enum AyuGramSettingsEntry: ItemListNodeEntry {
     case storyViews(Bool)
     case typing(Bool)
     case offline(Bool)
+    case antiRecallHeader
+    case antiRecall(Bool)
+    case editHistory(Bool)
+    case deletedMarker(Bool)
+    case antiRecallFooter
     case mediaHeader
     case restricted(Bool)
     case viewOnce(Bool)
@@ -70,6 +82,8 @@ private enum AyuGramSettingsEntry: ItemListNodeEntry {
             return AyuGramSettingsSection.ghost.rawValue
         case .privacyHeader, .readReceipts, .storyViews, .typing, .offline:
             return AyuGramSettingsSection.privacy.rawValue
+        case .antiRecallHeader, .antiRecall, .editHistory, .deletedMarker, .antiRecallFooter:
+            return AyuGramSettingsSection.antiRecall.rawValue
         case .mediaHeader, .restricted, .viewOnce, .vault, .mediaFooter:
             return AyuGramSettingsSection.media.rawValue
         case .linksHeader, .github, .telegram, .version:
@@ -87,15 +101,20 @@ private enum AyuGramSettingsEntry: ItemListNodeEntry {
         case .storyViews: return 5
         case .typing: return 6
         case .offline: return 7
-        case .mediaHeader: return 8
-        case .restricted: return 9
-        case .viewOnce: return 10
-        case .vault: return 11
-        case .mediaFooter: return 12
-        case .linksHeader: return 13
-        case .github: return 14
-        case .telegram: return 15
-        case .version: return 16
+        case .antiRecallHeader: return 8
+        case .antiRecall: return 9
+        case .editHistory: return 10
+        case .deletedMarker: return 11
+        case .antiRecallFooter: return 12
+        case .mediaHeader: return 13
+        case .restricted: return 14
+        case .viewOnce: return 15
+        case .vault: return 16
+        case .mediaFooter: return 17
+        case .linksHeader: return 18
+        case .github: return 19
+        case .telegram: return 20
+        case .version: return 21
         }
     }
 
@@ -122,6 +141,16 @@ private enum AyuGramSettingsEntry: ItemListNodeEntry {
             return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: "Скрывать набор текста", value: value, sectionId: self.section, style: .blocks, updated: { arguments.update(.hideTyping, $0) })
         case let .offline(value):
             return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: "Всегда офлайн", value: value, sectionId: self.section, style: .blocks, updated: { arguments.update(.stayOffline, $0) })
+        case .antiRecallHeader:
+            return ItemListSectionHeaderItem(presentationData: presentationData, text: "ANTI-RECALL", sectionId: self.section)
+        case let .antiRecall(value):
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: "Сохранять удалённые сообщения", value: value, sectionId: self.section, style: .blocks, updated: { arguments.update(.antiRecallEnabled, $0) })
+        case let .editHistory(value):
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: "История редактирования", value: value, sectionId: self.section, style: .blocks, updated: { arguments.update(.editHistoryEnabled, $0) })
+        case let .deletedMarker(value):
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: "Помечать удалённые сообщения", value: value, sectionId: self.section, style: .blocks, updated: { arguments.update(.showDeletedMessageMarker, $0) })
+        case .antiRecallFooter:
+            return ItemListTextItem(presentationData: presentationData, text: .plain("AyuGram сохраняет сообщения, которые уже были получены этим устройством. Предыдущие версии доступны по долгому нажатию на сообщение."), sectionId: self.section)
         case .mediaHeader:
             return ItemListSectionHeaderItem(presentationData: presentationData, text: "МЕДИА", sectionId: self.section)
         case let .restricted(value):
@@ -156,6 +185,11 @@ private func ayuGramSettingsEntries() -> [AyuGramSettingsEntry] {
         .storyViews(settings.hideStoryViews),
         .typing(settings.hideTyping),
         .offline(settings.stayOffline),
+        .antiRecallHeader,
+        .antiRecall(settings.antiRecallEnabled),
+        .editHistory(settings.editHistoryEnabled),
+        .deletedMarker(settings.showDeletedMessageMarker),
+        .antiRecallFooter,
         .mediaHeader,
         .restricted(settings.saveRestrictedContent),
         .viewOnce(settings.preserveViewOnceMedia),
@@ -179,6 +213,9 @@ public func ayuGramSettingsController(context: AccountContext) -> ViewController
         case .hideStoryViews: AyuGramSettings.hideStoryViewsOption = value
         case .hideTyping: AyuGramSettings.hideTypingOption = value
         case .stayOffline: AyuGramSettings.stayOfflineOption = value
+        case .antiRecallEnabled: AyuGramSettings.antiRecallEnabled = value
+        case .editHistoryEnabled: AyuGramSettings.editHistoryEnabled = value
+        case .showDeletedMessageMarker: AyuGramSettings.showDeletedMessageMarker = value
         case .saveRestrictedContent: AyuGramSettings.saveRestrictedContent = value
         case .preserveViewOnceMedia: AyuGramSettings.preserveViewOnceMedia = value
         case .vaultEnabled: AyuGramSettings.vaultEnabled = value

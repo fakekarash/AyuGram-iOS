@@ -4597,29 +4597,71 @@ func replayFinalState(
             case let .DeleteEphemeralMessages(peerId, ids):
                 deleteEphemeralMessages(transaction: transaction, peerId: peerId, ids: ids)
             case let .DeleteMessagesWithGlobalIds(ids):
-                var resourceIds: [MediaResourceId] = []
-                transaction.deleteMessagesWithGlobalIds(ids, forEachMedia: { media in
-                    addMessageMediaResourceIdsToRemove(media: media, resourceIds: &resourceIds)
-                })
-                if !resourceIds.isEmpty {
-                    let _ = mediaBox.removeCachedResources(Array(Set(resourceIds)), force: true).start()
+                if AyuGramSettings.antiRecallEnabled {
+                    for messageId in transaction.messageIdsForGlobalIds(ids) where messageId.namespace == Namespaces.Message.Cloud {
+                        transaction.updateMessage(messageId, update: { currentMessage in
+                            return .update(ayuGramMessageMarkedDeleted(currentMessage))
+                        })
+                    }
+                } else {
+                    var resourceIds: [MediaResourceId] = []
+                    transaction.deleteMessagesWithGlobalIds(ids, forEachMedia: { media in
+                        addMessageMediaResourceIdsToRemove(media: media, resourceIds: &resourceIds)
+                    })
+                    if !resourceIds.isEmpty {
+                        let _ = mediaBox.removeCachedResources(Array(Set(resourceIds)), force: true).start()
+                    }
+                    deletedMessageIds.append(contentsOf: ids.map { .global($0) })
                 }
-                deletedMessageIds.append(contentsOf: ids.map { .global($0) })
             case let .DeleteMessages(ids):
-                _internal_deleteMessages(transaction: transaction, mediaBox: mediaBox, ids: ids, manualAddMessageThreadStatsDifference: { id, add, remove in
-                    addMessageThreadStatsDifference(threadKey: id, remove: remove, addedMessagePeer: nil, addedMessageId: nil, isOutgoing: false)
-                })
-                deletedMessageIds.append(contentsOf: ids.map { .messageId($0) })
+                if AyuGramSettings.antiRecallEnabled {
+                    var unprotectedIds: [MessageId] = []
+                    for id in ids {
+                        if id.namespace == Namespaces.Message.Cloud, transaction.getMessage(id) != nil {
+                            transaction.updateMessage(id, update: { currentMessage in
+                                return .update(ayuGramMessageMarkedDeleted(currentMessage))
+                            })
+                        } else {
+                            unprotectedIds.append(id)
+                        }
+                    }
+                    if !unprotectedIds.isEmpty {
+                        _internal_deleteMessages(transaction: transaction, mediaBox: mediaBox, ids: unprotectedIds, manualAddMessageThreadStatsDifference: { id, add, remove in
+                            addMessageThreadStatsDifference(threadKey: id, remove: remove, addedMessagePeer: nil, addedMessageId: nil, isOutgoing: false)
+                        })
+                        deletedMessageIds.append(contentsOf: unprotectedIds.map { .messageId($0) })
+                    }
+                } else {
+                    _internal_deleteMessages(transaction: transaction, mediaBox: mediaBox, ids: ids, manualAddMessageThreadStatsDifference: { id, add, remove in
+                        addMessageThreadStatsDifference(threadKey: id, remove: remove, addedMessagePeer: nil, addedMessageId: nil, isOutgoing: false)
+                    })
+                    deletedMessageIds.append(contentsOf: ids.map { .messageId($0) })
+                }
             case let .UpdateMinAvailableMessage(id):
                 if let message = transaction.getMessage(id) {
                     updatePeerChatInclusionWithMinTimestamp(transaction: transaction, id: id.peerId, minTimestamp: message.timestamp, forceRootGroupIfNotExists: false)
                 }
-                var resourceIds: [MediaResourceId] = []
-                transaction.deleteMessagesInRange(peerId: id.peerId, namespace: id.namespace, minId: 1, maxId: id.id, forEachMedia: { media in
-                    addMessageMediaResourceIdsToRemove(media: media, resourceIds: &resourceIds)
-                })
-                if !resourceIds.isEmpty {
-                    let _ = mediaBox.removeCachedResources(Array(Set(resourceIds)), force: true).start()
+                if AyuGramSettings.antiRecallEnabled && id.namespace == Namespaces.Message.Cloud {
+                    var messageIds: [MessageId] = []
+                    transaction.withAllMessages(peerId: id.peerId, namespace: id.namespace, { message in
+                        if message.id.id <= id.id {
+                            messageIds.append(message.id)
+                        }
+                        return true
+                    })
+                    for messageId in messageIds {
+                        transaction.updateMessage(messageId, update: { currentMessage in
+                            return .update(ayuGramMessageMarkedDeleted(currentMessage))
+                        })
+                    }
+                } else {
+                    var resourceIds: [MediaResourceId] = []
+                    transaction.deleteMessagesInRange(peerId: id.peerId, namespace: id.namespace, minId: 1, maxId: id.id, forEachMedia: { media in
+                        addMessageMediaResourceIdsToRemove(media: media, resourceIds: &resourceIds)
+                    })
+                    if !resourceIds.isEmpty {
+                        let _ = mediaBox.removeCachedResources(Array(Set(resourceIds)), force: true).start()
+                    }
                 }
             case let .UpdatePeerChatInclusion(peerId, groupId, changedGroup):
                 if shouldExcludePeerFromChatList(transaction: transaction, peerId: peerId) {
@@ -4689,7 +4731,8 @@ func replayFinalState(
                         updatedMedia = previousMessage.media
                     }
                     
-                    return .update(message.withUpdatedLocalTags(updatedLocalTags).withUpdatedFlags(updatedFlags).withUpdatedAttributes(updatedAttributes).withUpdatedMedia(updatedMedia))
+                    let updatedMessage = message.withUpdatedLocalTags(updatedLocalTags).withUpdatedFlags(updatedFlags).withUpdatedAttributes(updatedAttributes).withUpdatedMedia(updatedMedia)
+                    return .update(ayuGramMessagePreservingEditHistory(previous: previousMessage, updated: updatedMessage))
                 })
                 if let generatedEvent = generatedEvent {
                     addedReactionEvents.append(generatedEvent)
