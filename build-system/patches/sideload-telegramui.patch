@@ -27,7 +27,7 @@ index 941074ea..081b158b 100644
 +                }
 +                return URL(fileURLWithPath: value, isDirectory: true)
 +                    .appendingPathComponent("Library/Application Support", isDirectory: true)
-+            })
++            }
 +            applicationSupportCandidates.append(contentsOf: FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask))
 +            var writableContainerUrl: URL?
 +            for applicationSupportUrl in applicationSupportCandidates {
