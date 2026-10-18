@@ -9,7 +9,7 @@ import AccountContext
 private func appSpecificAssetCollection() -> Signal<PHAssetCollection, NoError> {
     return Signal { subscriber in
         let fetchOption = PHFetchOptions()
-        let albumName = "Telegram"
+        let albumName = "AyuGram"
         fetchOption.predicate = NSPredicate(format: "title == '" + albumName + "'")
         
         let fetchResult = PHAssetCollection.fetchAssetCollections(
@@ -85,7 +85,7 @@ private final class DownloadedMediaStoreContext {
                     let peerTypeValue: MediaAutoSaveSettings.PeerType
                     switch peer {
                     case .user:
-                        if let cachedUserData = cachedData as? CachedUserData, cachedUserData.flags.contains(.copyProtectionEnabled) || cachedUserData.flags.contains(.myCopyProtectionEnabled) {
+                        if !AyuGramSettings.saveRestrictedContent, let cachedUserData = cachedData as? CachedUserData, cachedUserData.flags.contains(.copyProtectionEnabled) || cachedUserData.flags.contains(.myCopyProtectionEnabled) {
                             return false
                         }
                         peerTypeValue = .users
@@ -94,7 +94,7 @@ private final class DownloadedMediaStoreContext {
                     case .legacyGroup:
                         peerTypeValue = .groups
                     case let .channel(channel):
-                        if channel.flags.contains(.copyProtectionEnabled) {
+                        if !AyuGramSettings.saveRestrictedContent && channel.flags.contains(.copyProtectionEnabled) {
                             return false
                         }
                         

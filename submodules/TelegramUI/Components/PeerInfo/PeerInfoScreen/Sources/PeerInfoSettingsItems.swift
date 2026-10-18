@@ -23,6 +23,7 @@ enum SettingsSection: Int, CaseIterable {
     case proxy
     case apps
     case shortcuts
+    case ayugram
     case advanced
     case payment
     case extra
@@ -245,6 +246,10 @@ func settingsItems(data: PeerInfoScreenData?, context: AccountContext, presentat
     }))
     items[.shortcuts]!.append(PeerInfoScreenDisclosureItem(id: 4, text: presentationData.strings.Settings_ChatFolders, icon: PresentationResourcesSettings.chatFolders, action: {
         interaction.openSettings(.chatFolders)
+    }))
+
+    items[.ayugram]!.append(PeerInfoScreenDisclosureItem(id: 0, text: "AyuGram", icon: PresentationResourcesSettings.security, action: {
+        interaction.openSettings(.ayugram)
     }))
     
     let notificationsWarning: Bool

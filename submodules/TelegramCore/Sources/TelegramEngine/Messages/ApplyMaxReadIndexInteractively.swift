@@ -41,6 +41,12 @@ func _internal_applyMaxReadMessageIdInteractively(postbox: Postbox, stateManager
 }
 
 func _internal_applyMaxReadIndexInteractively(transaction: Transaction, stateManager: AccountStateManager, index: MessageIndex) {
+    if AyuGramSettings.hideReadReceipts {
+        if index.id.peerId.namespace != Namespaces.Peer.SecretChat {
+            transaction.applyIncomingReadMaxId(index.id)
+        }
+        return
+    }
     let messageIds = transaction.applyInteractiveReadMaxIndex(index)
     
     if let peer = transaction.getPeer(index.id.peerId), peer.isForumOrMonoForum {
@@ -208,11 +214,11 @@ func _internal_toggleForumThreadUnreadMarkInteractively(transaction: Transaction
                 transaction.setMessageHistoryThreadInfo(peerId: peerId, threadId: threadId, info: entry)
             }
             
-            if peer.isForum {
+            if !AyuGramSettings.hideReadReceipts && peer.isForum {
                 if let inputPeer = apiInputPeer(peer) {
                     let _ = network.request(Api.functions.messages.readDiscussion(peer: inputPeer, msgId: Int32(clamping: threadId), readMaxId: messageIndex.id.id)).start()
                 }
-            } else if peer.isMonoForum {
+            } else if !AyuGramSettings.hideReadReceipts && peer.isMonoForum {
                 if let inputPeer = apiInputPeer(peer), let subPeer = transaction.getPeer(PeerId(threadId)).flatMap(apiInputPeer) {
                     let _ = network.request(Api.functions.messages.readSavedHistory(parentPeer: inputPeer, peer: subPeer, maxId: messageIndex.id.id)).start()
                 }
@@ -244,11 +250,11 @@ func _internal_markForumThreadAsReadInteractively(transaction: Transaction, netw
             transaction.setMessageHistoryThreadInfo(peerId: peerId, threadId: threadId, info: entry)
         }
         
-        if peer.isForum {
+        if !AyuGramSettings.hideReadReceipts && peer.isForum {
             if let inputPeer = apiInputPeer(peer) {
                 let _ = network.request(Api.functions.messages.readDiscussion(peer: inputPeer, msgId: Int32(clamping: threadId), readMaxId: messageIndex.id.id)).start()
             }
-        } else if peer.isMonoForum {
+        } else if !AyuGramSettings.hideReadReceipts && peer.isMonoForum {
             if let inputPeer = apiInputPeer(peer), let subPeer = transaction.getPeer(PeerId(threadId)).flatMap(apiInputPeer) {
                 let _ = network.request(Api.functions.messages.readSavedHistory(parentPeer: inputPeer, peer: subPeer, maxId: messageIndex.id.id)).start()
             }
@@ -286,11 +292,11 @@ func _internal_togglePeerUnreadMarkInteractively(transaction: Transaction, netwo
                     transaction.setMessageHistoryThreadInfo(peerId: peerId, threadId: item.threadId, info: entry)
                 }
                 
-                if peer.isForum {
+                if !AyuGramSettings.hideReadReceipts && peer.isForum {
                     if let inputPeer = apiInputPeer(peer) {
                         let _ = network.request(Api.functions.messages.readDiscussion(peer: inputPeer, msgId: Int32(clamping: item.threadId), readMaxId: messageIndex.id.id)).start()
                     }
-                } else if peer.isMonoForum {
+                } else if !AyuGramSettings.hideReadReceipts && peer.isMonoForum {
                     if let inputPeer = apiInputPeer(peer), let subPeer = transaction.getPeer(PeerId(item.threadId)).flatMap(apiInputPeer) {
                         let _ = network.request(Api.functions.messages.readSavedHistory(parentPeer: inputPeer, peer: subPeer, maxId: messageIndex.id.id)).start()
                     }

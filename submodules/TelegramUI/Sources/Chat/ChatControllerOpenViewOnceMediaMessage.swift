@@ -119,14 +119,68 @@ import PeerNameColorScreen
 import ChatEmptyNode
 import ChatMediaInputStickerGridItem
 
+private func ayuGramCopyToVault(path: String, message: Message, fileExtension: String) {
+    let fileManager = FileManager.default
+    guard let documents = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
+        return
+    }
+    let vault = documents.appendingPathComponent("AyuGram Vault", isDirectory: true)
+    do {
+        try fileManager.createDirectory(at: vault, withIntermediateDirectories: true)
+        let peerId = message.id.peerId.toInt64()
+        let cleanExtension = fileExtension.isEmpty ? "bin" : fileExtension.lowercased()
+        let destination = vault.appendingPathComponent("\(peerId)_\(message.id.id).\(cleanExtension)")
+        if fileManager.fileExists(atPath: destination.path) {
+            try fileManager.removeItem(at: destination)
+        }
+        try fileManager.copyItem(at: URL(fileURLWithPath: path), to: destination)
+    } catch {
+    }
+}
+
+private func ayuGramSaveViewOnceMedia(context: AccountContext, message: Message) {
+    guard AyuGramSettings.preserveViewOnceMedia && AyuGramSettings.vaultEnabled else {
+        return
+    }
+    for media in message.media {
+        if let file = media as? TelegramMediaFile {
+            let fileExtension: String
+            if let fileName = file.fileName, !URL(fileURLWithPath: fileName).pathExtension.isEmpty {
+                fileExtension = URL(fileURLWithPath: fileName).pathExtension
+            } else if file.isVoice {
+                fileExtension = "ogg"
+            } else if file.isVideo || file.isInstantVideo {
+                fileExtension = "mp4"
+            } else {
+                fileExtension = "bin"
+            }
+            let _ = messageMediaFileInteractiveFetched(context: context, message: message, file: file, userInitiated: true).startStandalone()
+            let _ = (context.account.postbox.mediaBox.resourceData(file.resource, option: .complete(waitUntilFetchStatus: true))
+            |> filter { $0.complete }
+            |> take(1)).startStandalone(next: { data in
+                ayuGramCopyToVault(path: data.path, message: message, fileExtension: fileExtension)
+            })
+        } else if let image = media as? TelegramMediaImage, let representation = largestImageRepresentation(image.representations) {
+            let _ = messageMediaImageInteractiveFetched(context: context, message: message, image: image, resource: representation.resource, userInitiated: true, storeToDownloadsPeerId: nil).startStandalone()
+            let _ = (context.account.postbox.mediaBox.resourceData(representation.resource, option: .complete(waitUntilFetchStatus: true))
+            |> filter { $0.complete }
+            |> take(1)).startStandalone(next: { data in
+                ayuGramCopyToVault(path: data.path, message: message, fileExtension: "jpg")
+            })
+        }
+    }
+}
+
 extension ChatControllerImpl {
     func openViewOnceMediaMessage(_ message: EngineMessage) {
-        if self.screenCaptureManager?.isRecordingActive == true {
+        if !AyuGramSettings.preserveViewOnceMedia && self.screenCaptureManager?.isRecordingActive == true {
             let controller = textAlertController(context: self.context, updatedPresentationData: self.updatedPresentationData, title: nil, text: self.presentationData.strings.Chat_PlayOnceMesasge_DisableScreenCapture, actions: [TextAlertAction(type: .defaultAction, title: self.presentationData.strings.Common_OK, action: {
             })])
             self.present(controller, in: .window(.root))
             return
         }
+
+        ayuGramSaveViewOnceMedia(context: self.context, message: message._asMessage())
         
         let isIncoming = message.effectivelyIncoming(self.context.account.peerId)
         

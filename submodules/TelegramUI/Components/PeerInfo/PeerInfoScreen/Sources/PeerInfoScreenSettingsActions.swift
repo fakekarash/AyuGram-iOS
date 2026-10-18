@@ -95,6 +95,8 @@ extension PeerInfoScreenNode {
         case .chatFolders:
             let controller = self.context.sharedContext.makeFilterSettingsController(context: self.context, modal: false, scrollToTags: false, dismissed: nil)
             push(controller)
+        case .ayugram:
+            push(ayuGramSettingsController(context: self.context))
         case .notificationsAndSounds:
             if let settings = self.data?.globalSettings {
                 push(notificationsAndSoundsController(context: self.context, exceptionsList: settings.notificationExceptions))

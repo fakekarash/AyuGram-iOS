@@ -126,6 +126,8 @@ def repackage():
                     plist["CFBundleIdentifier"] = CUSTOM_BUNDLE_ID
                     plist["CFBundleDisplayName"] = "AyuGram"
                     plist["CFBundleName"] = "AyuGram"
+                    plist["UIFileSharingEnabled"] = True
+                    plist["LSSupportsOpeningDocumentsInPlace"] = True
                     plist["CFBundleURLTypes"] = [
                         {
                             "CFBundleTypeRole": "Viewer",
@@ -174,6 +176,8 @@ def verify():
             raise RuntimeError("Unexpected sideload application name")
         if info.get("CFBundleSupportedPlatforms") != ["iPhoneOS"]:
             raise RuntimeError("Expected an iPhoneOS device build")
+        if info.get("UIFileSharingEnabled") is not True:
+            raise RuntimeError("AyuGram Vault is not exposed through iOS file sharing")
         forbidden = [
             name for name in names
             if name.startswith(app_root + "PlugIns/")
@@ -210,7 +214,17 @@ def verify():
         "extensions": [],
         "signing": "re-signable package; stale fake signature and profiles removed",
         "compatibility": "main app uses its private sandbox when App Groups are unavailable",
-        "limitations": ["no app extensions", "no push entitlement guarantee"],
+        "features": [
+            "AyuGram app icon and settings screen",
+            "Ghost Mode controls for reads, stories, typing and online presence",
+            "restricted-content save controls",
+            "view-once preservation and AyuGram Vault",
+        ],
+        "limitations": [
+            "no app extensions",
+            "no push entitlement guarantee",
+            "feature behavior requires an on-device test after re-signing",
+        ],
         "device_installation_tested": False,
     }
     (ARTIFACTS / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")

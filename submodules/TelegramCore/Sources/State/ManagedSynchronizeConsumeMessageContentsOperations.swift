@@ -110,6 +110,12 @@ func managedSynchronizeConsumeMessageContentOperations(postbox: Postbox, network
 }
 
 private func synchronizeConsumeMessageContents(transaction: Transaction, network: Network, stateManager: AccountStateManager, peerId: PeerId, operation: SynchronizeConsumeMessageContentsOperation) -> Signal<Void, NoError> {
+    let containsViewOnceMedia = operation.messageIds.contains { messageId in
+        transaction.getMessage(messageId)?.minAutoremoveOrClearTimeout == viewOnceTimeout
+    }
+    if AyuGramSettings.hideReadReceipts || (AyuGramSettings.preserveViewOnceMedia && containsViewOnceMedia) {
+        return .complete()
+    }
     if peerId.namespace == Namespaces.Peer.CloudUser || peerId.namespace == Namespaces.Peer.CloudGroup {
         return network.request(Api.functions.messages.readMessageContents(id: operation.messageIds.map { $0.id }))
         |> map(Optional.init)
