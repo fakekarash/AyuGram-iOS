@@ -42,6 +42,12 @@ jobs:
       - name: Apply reviewed sideload compatibility patches
         run: python3 build-system/ayugram_sideload_ci.py patch
 
+      - name: Parse patched Swift sources
+        run: |
+          set -euo pipefail
+          xcrun swiftc -frontend -parse submodules/TelegramUI/Sources/AppDelegate.swift
+          xcrun swiftc -frontend -parse submodules/PasscodeCore/Sources/Passcode.swift
+
       - name: Build simulator client
         env:
           TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
