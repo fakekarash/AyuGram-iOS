@@ -188,12 +188,13 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
             }
 
             if UIApplication.shared.applicationState == .active {
-                self.present(UndoOverlayController(
+                let controller = UndoOverlayController(
                     presentationData: self.presentationData,
                     content: .actionSucceeded(title: nil, text: text, cancel: nil, destructive: false),
                     elevatedLayout: false,
                     action: { _ in false }
-                ), in: .window(.root))
+                )
+                self.presentOverlay(controller: controller, inGlobal: true)
             } else if AyuGramSettings.systemDeletionNotificationsEnabled {
                 let center = UNUserNotificationCenter.current()
                 center.getNotificationSettings { settings in
