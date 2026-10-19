@@ -83,13 +83,20 @@ public func ayuGramMessagePreservingEditHistory(previous: Message, updated: Stor
         return updated
     }
 
-    var attributes = updated.attributes.filter { !($0 is AyuGramMessageHistoryAttribute) }
-    attributes.append(AyuGramMessageHistoryAttribute(
+    let history = AyuGramMessageHistoryAttribute(
         previousTexts: previousTexts,
         editTimestamps: editTimestamps,
         isDeleted: existing?.isDeleted ?? false,
         deletionTimestamp: existing?.deletionTimestamp ?? 0
-    ))
+    )
+    var attributes = updated.attributes.filter { !($0 is AyuGramMessageHistoryAttribute) }
+    attributes.append(history)
+    AyuGramArchiveStore.recordEdited(
+        message: previous,
+        currentText: updated.text,
+        previousTexts: previousTexts,
+        editTimestamps: editTimestamps
+    )
     return updated.withUpdatedAttributes(attributes)
 }
 
@@ -100,21 +107,26 @@ public func ayuGramMessageMarkedDeleted(_ message: Message) -> StoreMessage {
     }
 
     var attributes = message.attributes.filter { !($0 is AyuGramMessageHistoryAttribute) }
-    attributes.append(AyuGramMessageHistoryAttribute(
+    let history = AyuGramMessageHistoryAttribute(
         previousTexts: existing?.previousTexts ?? [],
         editTimestamps: existing?.editTimestamps ?? [],
         isDeleted: true,
         deletionTimestamp: ayuGramUnixTimestamp()
-    ))
+    )
+    attributes.append(history)
 
-    var text = message.text
-    if AyuGramSettings.showDeletedMessageMarker {
-        let marker = "🛡 AyuGram: удалено отправителем"
-        if text.isEmpty {
-            text = marker
-        } else if !text.contains(marker) {
-            text += "\n\n" + marker
-        }
+    AyuGramArchiveStore.recordDeleted(message: message, history: history)
+
+    DispatchQueue.main.async {
+        NotificationCenter.default.post(
+            name: .ayuGramMessageDeleted,
+            object: nil,
+            userInfo: [
+                "peerId": message.id.peerId.toInt64(),
+                "messageId": message.id.id
+            ]
+        )
     }
-    return ayuGramStoreMessage(from: message, text: text, attributes: attributes)
+
+    return ayuGramStoreMessage(from: message, text: message.text, attributes: attributes)
 }

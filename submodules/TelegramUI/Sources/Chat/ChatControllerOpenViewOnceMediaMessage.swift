@@ -120,27 +120,19 @@ import PeerNameColorScreen
 import ChatEmptyNode
 import ChatMediaInputStickerGridItem
 
-private func ayuGramCopyToVault(path: String, message: Message, fileExtension: String) {
-    let fileManager = FileManager.default
-    guard let documents = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
-        return
-    }
-    let vault = documents.appendingPathComponent("AyuGram Vault", isDirectory: true)
-    do {
-        try fileManager.createDirectory(at: vault, withIntermediateDirectories: true)
-        let peerId = message.id.peerId.toInt64()
-        let cleanExtension = fileExtension.isEmpty ? "bin" : fileExtension.lowercased()
-        let destination = vault.appendingPathComponent("\(peerId)_\(message.id.id).\(cleanExtension)")
-        if fileManager.fileExists(atPath: destination.path) {
-            try fileManager.removeItem(at: destination)
-        }
-        try fileManager.copyItem(at: URL(fileURLWithPath: path), to: destination)
-    } catch {
-    }
+private enum AyuGramViewOnceSaveError: Error {
+    case unavailable
+    case disabled
 }
 
-private func ayuGramSaveViewOnceMedia(context: AccountContext, message: Message) {
-    guard AyuGramSettings.preserveViewOnceMedia && AyuGramSettings.vaultEnabled else {
+private func ayuGramSaveViewOnceMedia(
+    context: AccountContext,
+    message: Message,
+    explicit: Bool,
+    completion: ((Result<AyuGramVaultItem, Error>) -> Void)? = nil
+) {
+    guard AyuGramSettings.vaultEnabled, explicit || AyuGramSettings.preserveViewOnceMedia else {
+        completion?(.failure(AyuGramViewOnceSaveError.disabled))
         return
     }
     for media in message.media {
@@ -158,18 +150,45 @@ private func ayuGramSaveViewOnceMedia(context: AccountContext, message: Message)
             let _ = messageMediaFileInteractiveFetched(context: context, message: message, file: file, userInitiated: true).startStandalone()
             let _ = (context.account.postbox.mediaBox.resourceData(file.resource, option: .complete(waitUntilFetchStatus: true))
             |> filter { $0.complete }
-            |> take(1)).startStandalone(next: { data in
-                ayuGramCopyToVault(path: data.path, message: message, fileExtension: fileExtension)
+            |> take(1)
+            |> deliverOnMainQueue).startStandalone(next: { data in
+                do {
+                    let item = try AyuGramVaultStore.save(
+                        sourcePath: data.path,
+                        message: message,
+                        fileExtension: fileExtension,
+                        originalFilename: file.fileName,
+                        kind: .viewOnce
+                    )
+                    completion?(.success(item))
+                } catch {
+                    completion?(.failure(error))
+                }
             })
+            return
         } else if let image = media as? TelegramMediaImage, let representation = largestImageRepresentation(image.representations) {
             let _ = messageMediaImageInteractiveFetched(context: context, message: message, image: image, resource: representation.resource, userInitiated: true, storeToDownloadsPeerId: nil).startStandalone()
             let _ = (context.account.postbox.mediaBox.resourceData(representation.resource, option: .complete(waitUntilFetchStatus: true))
             |> filter { $0.complete }
-            |> take(1)).startStandalone(next: { data in
-                ayuGramCopyToVault(path: data.path, message: message, fileExtension: "jpg")
+            |> take(1)
+            |> deliverOnMainQueue).startStandalone(next: { data in
+                do {
+                    let item = try AyuGramVaultStore.save(
+                        sourcePath: data.path,
+                        message: message,
+                        fileExtension: "jpg",
+                        originalFilename: nil,
+                        kind: .viewOnce
+                    )
+                    completion?(.success(item))
+                } catch {
+                    completion?(.failure(error))
+                }
             })
+            return
         }
     }
+    completion?(.failure(AyuGramViewOnceSaveError.unavailable))
 }
 
 extension ChatControllerImpl {
@@ -181,7 +200,7 @@ extension ChatControllerImpl {
             return
         }
 
-        ayuGramSaveViewOnceMedia(context: self.context, message: message._asMessage())
+        ayuGramSaveViewOnceMedia(context: self.context, message: message._asMessage(), explicit: false)
         
         let isIncoming = message.effectivelyIncoming(self.context.account.peerId)
         
@@ -202,7 +221,41 @@ extension ChatControllerImpl {
                             presentImpl?(c)
                         }
                     )),
-                    items: .single(ContextController.Items(content: .list([]))),
+                    items: .single(ContextController.Items(content: .list([
+                        .action(ContextMenuActionItem(
+                            text: "Сохранить в AyuGram",
+                            icon: { theme in
+                                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Save"), color: theme.contextMenu.primaryColor)
+                            },
+                            action: { [weak self] _, dismiss in
+                                dismiss(.default)
+                                guard let self else {
+                                    return
+                                }
+                                ayuGramSaveViewOnceMedia(context: self.context, message: message._asMessage(), explicit: true, completion: { [weak self] result in
+                                    guard let self else {
+                                        return
+                                    }
+                                    switch result {
+                                    case .success:
+                                        self.present(UndoOverlayController(
+                                            presentationData: self.presentationData,
+                                            content: .actionSucceeded(title: nil, text: "Сохранено в хранилище AyuGram", cancel: nil, destructive: false),
+                                            elevatedLayout: false,
+                                            action: { _ in false }
+                                        ), in: .window(.root))
+                                    case .failure:
+                                        self.present(UndoOverlayController(
+                                            presentationData: self.presentationData,
+                                            content: .info(title: nil, text: "AyuGram не смог сохранить файл: медиа уже недоступно", timeout: 4.0, customUndoText: nil),
+                                            elevatedLayout: false,
+                                            action: { _ in false }
+                                        ), in: .window(.root))
+                                    }
+                                })
+                            }
+                        ))
+                    ]))),
                     closeActionTitle: isIncoming ? self.presentationData.strings.Chat_PlayOnceMesasgeCloseAndDelete : self.presentationData.strings.Chat_PlayOnceMesasgeClose,
                     closeAction: { [weak self] in
                         if let self {

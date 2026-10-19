@@ -443,6 +443,11 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
     
     override public func setupItem(_ item: ChatMessageItem, synchronousLoad: Bool) {
         super.setupItem(item, synchronousLoad: synchronousLoad)
+
+        let isAyuGramDeleted = item.message.attributes.contains(where: { attribute in
+            (attribute as? AyuGramMessageHistoryAttribute)?.isDeleted == true
+        })
+        self.alpha = isAyuGramDeleted ? CGFloat(AyuGramSettings.deletedMessageOpacity) : 1.0
         
         if item.message.id.namespace == Namespaces.Message.Local || item.message.id.namespace == Namespaces.Message.ScheduledLocal || item.message.id.namespace == Namespaces.Message.QuickReplyLocal {
             self.wasPending = true

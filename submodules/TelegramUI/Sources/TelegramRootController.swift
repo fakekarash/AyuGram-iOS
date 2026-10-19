@@ -30,6 +30,8 @@ import PeerInfoScreen
 import PeerInfoStoryGridScreen
 import ShareWithPeersScreen
 import ChatEmptyNode
+import UndoUI
+import UserNotifications
 
 private class DetailsChatPlaceholderNode: ASDisplayNode, NavigationDetailsPlaceholderNode {
     private var presentationData: PresentationData
@@ -88,6 +90,9 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
     
     private var applicationInFocusDisposable: Disposable?
     private var storyUploadEventsDisposable: Disposable?
+    private var ayuGramDeletionObserver: NSObjectProtocol?
+    private var ayuGramDeletionNotificationWorkItem: DispatchWorkItem?
+    private var ayuGramPendingDeletionCount: Int = 0
     
     override public var minimizedContainer: MinimizedContainer? {
         didSet {
@@ -104,6 +109,15 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
         
         super.init(mode: .automaticMasterDetail, theme: NavigationControllerTheme(presentationTheme: self.presentationData.theme))
+
+        self.ayuGramDeletionObserver = NotificationCenter.default.addObserver(
+            forName: .ayuGramMessageDeleted,
+            object: nil,
+            queue: .main,
+            using: { [weak self] _ in
+                self?.ayuGramMessageWasDeleted()
+            }
+        )
         
         self.presentationDataDisposable = (context.sharedContext.presentationData
         |> deliverOnMainQueue).startStrict(next: { [weak self] presentationData in
@@ -146,6 +160,61 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         self.presentationDataDisposable?.dispose()
         self.applicationInFocusDisposable?.dispose()
         self.storyUploadEventsDisposable?.dispose()
+        self.ayuGramDeletionNotificationWorkItem?.cancel()
+        if let ayuGramDeletionObserver = self.ayuGramDeletionObserver {
+            NotificationCenter.default.removeObserver(ayuGramDeletionObserver)
+        }
+    }
+
+    private func ayuGramMessageWasDeleted() {
+        guard AyuGramSettings.deletionNotificationsEnabled else {
+            return
+        }
+
+        self.ayuGramPendingDeletionCount += 1
+        self.ayuGramDeletionNotificationWorkItem?.cancel()
+
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self else {
+                return
+            }
+            let count = self.ayuGramPendingDeletionCount
+            self.ayuGramPendingDeletionCount = 0
+            let text: String
+            if count == 1 {
+                text = "AyuGram сохранил удалённое сообщение"
+            } else {
+                text = "AyuGram сохранил удалённые сообщения: \(count)"
+            }
+
+            if UIApplication.shared.applicationState == .active {
+                self.present(UndoOverlayController(
+                    presentationData: self.presentationData,
+                    content: .actionSucceeded(title: nil, text: text, cancel: nil, destructive: false),
+                    elevatedLayout: false,
+                    action: { _ in false }
+                ), in: .window(.root))
+            } else if AyuGramSettings.systemDeletionNotificationsEnabled {
+                let center = UNUserNotificationCenter.current()
+                center.getNotificationSettings { settings in
+                    guard settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional else {
+                        return
+                    }
+                    let content = UNMutableNotificationContent()
+                    content.title = "AyuGram"
+                    content.body = text
+                    content.sound = .default
+                    let request = UNNotificationRequest(
+                        identifier: "ayugram.deleted.\(UUID().uuidString)",
+                        content: content,
+                        trigger: nil
+                    )
+                    center.add(request)
+                }
+            }
+        }
+        self.ayuGramDeletionNotificationWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: workItem)
     }
     
     public func getContactsController() -> ViewController? {

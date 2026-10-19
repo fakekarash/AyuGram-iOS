@@ -17,6 +17,20 @@ public enum AyuGramSettings {
         NotificationCenter.default.post(name: .ayuGramSettingsChanged, object: nil)
     }
 
+    private static func doubleValue(_ key: String, default defaultValue: Double) -> Double {
+        let defaults = UserDefaults.standard
+        let fullKey = self.prefix + key
+        guard defaults.object(forKey: fullKey) != nil else {
+            return defaultValue
+        }
+        return defaults.double(forKey: fullKey)
+    }
+
+    private static func setDoubleValue(_ value: Double, _ key: String) {
+        UserDefaults.standard.set(value, forKey: self.prefix + key)
+        NotificationCenter.default.post(name: .ayuGramSettingsChanged, object: nil)
+    }
+
     public static var ghostModeEnabled: Bool {
         get { self.value("ghostModeEnabled", default: false) }
         set { self.setValue(newValue, "ghostModeEnabled") }
@@ -72,6 +86,25 @@ public enum AyuGramSettings {
         set { self.setValue(newValue, "showDeletedMessageMarker") }
     }
 
+    public static var deletionNotificationsEnabled: Bool {
+        get { self.value("deletionNotificationsEnabled", default: true) }
+        set { self.setValue(newValue, "deletionNotificationsEnabled") }
+    }
+
+    public static var systemDeletionNotificationsEnabled: Bool {
+        get { self.value("systemDeletionNotificationsEnabled", default: false) }
+        set { self.setValue(newValue, "systemDeletionNotificationsEnabled") }
+    }
+
+    public static var deletedMessageOpacity: Double {
+        get {
+            return min(0.7, max(0.4, self.doubleValue("deletedMessageOpacity", default: 0.55)))
+        }
+        set {
+            self.setDoubleValue(min(0.7, max(0.4, newValue)), "deletedMessageOpacity")
+        }
+    }
+
     public static var hideReadReceipts: Bool {
         self.ghostModeEnabled && self.hideReadReceiptsOption
     }
@@ -91,4 +124,7 @@ public enum AyuGramSettings {
 
 public extension Notification.Name {
     static let ayuGramSettingsChanged = Notification.Name("AyuGramSettingsChanged")
+    static let ayuGramMessageDeleted = Notification.Name("AyuGramMessageDeleted")
+    static let ayuGramVaultChanged = Notification.Name("AyuGramVaultChanged")
+    static let ayuGramArchiveChanged = Notification.Name("AyuGramArchiveChanged")
 }
