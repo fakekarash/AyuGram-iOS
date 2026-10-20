@@ -206,7 +206,7 @@ public enum AyuGramVaultStore {
             if let image = media as? TelegramMediaImage, AyuGramSettings.saveDeletedPhotos, let representation = largestImageRepresentation(image.representations), let path = mediaBox.completedResourcePath(representation.resource) {
                 let resourceId = representation.resource.id.stringRepresentation
                 DispatchQueue.global(qos: .utility).async {
-                    try? self.save(sourcePath: path, message: message, fileExtension: "jpg", originalFilename: nil, kind: .deletedMedia, uniqueSuffix: resourceId)
+                    _ = try? self.save(sourcePath: path, message: message, fileExtension: "jpg", originalFilename: nil, kind: .deletedMedia, uniqueSuffix: resourceId)
                 }
             } else if let file = media as? TelegramMediaFile {
                 let allowed: Bool
@@ -234,7 +234,7 @@ public enum AyuGramVaultStore {
                 }
                 let resourceId = file.resource.id.stringRepresentation
                 DispatchQueue.global(qos: .utility).async {
-                    try? self.save(sourcePath: path, message: message, fileExtension: ext, originalFilename: file.fileName, kind: .deletedMedia, uniqueSuffix: resourceId)
+                    _ = try? self.save(sourcePath: path, message: message, fileExtension: ext, originalFilename: file.fileName, kind: .deletedMedia, uniqueSuffix: resourceId)
                 }
             }
         }
