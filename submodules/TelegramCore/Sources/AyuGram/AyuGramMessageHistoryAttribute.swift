@@ -55,16 +55,45 @@ private func ayuGramStoreMessage(from message: Message, text: String, attributes
         authorId: message.author?.id,
         text: text,
         attributes: attributes,
-        media: message.media
+        media: ayuGramAllowedDeletedMedia(message)
     )
 }
 
+private func ayuGramAllowedDeletedMedia(_ message: Message) -> [Media] {
+    return message.media.filter { media in
+        if media is TelegramMediaImage {
+            return AyuGramSettings.saveDeletedPhotos
+        } else if let file = media as? TelegramMediaFile {
+            if file.isVoice {
+                return AyuGramSettings.saveDeletedVoice
+            } else if file.isVideo || file.isInstantVideo {
+                return AyuGramSettings.saveDeletedVideos
+            } else if file.isSticker || file.isAnimated || file.isAnimatedSticker {
+                return AyuGramSettings.saveDeletedStickers
+            } else {
+                return AyuGramSettings.saveDeletedFiles
+            }
+        }
+        return AyuGramSettings.saveDeletedText
+    }
+}
+
+public func ayuGramShouldPreserveDeletedMessage(_ message: Message) -> Bool {
+    guard AyuGramSettings.antiRecallEnabled, AyuGramSettings.shouldPreserve(message: message) else {
+        return false
+    }
+    return AyuGramSettings.saveDeletedText || !ayuGramAllowedDeletedMedia(message).isEmpty
+}
+
 public func ayuGramMessagePreservingEditHistory(previous: Message, updated: StoreMessage) -> StoreMessage {
+    guard AyuGramSettings.editHistoryEnabled, AyuGramSettings.shouldPreserve(message: previous) else {
+        return updated
+    }
     let existing = previous.ayuGramHistoryAttribute
     var previousTexts = existing?.previousTexts ?? []
     var editTimestamps = existing?.editTimestamps ?? []
 
-    if AyuGramSettings.editHistoryEnabled && previous.text != updated.text {
+    if previous.text != updated.text {
         if previousTexts.last != previous.text {
             previousTexts.append(previous.text)
             let editTimestamp = (updated.attributes.first(where: { $0 is EditedMessageAttribute }) as? EditedMessageAttribute)?.date ?? ayuGramUnixTimestamp()
@@ -100,7 +129,7 @@ public func ayuGramMessagePreservingEditHistory(previous: Message, updated: Stor
     return updated.withUpdatedAttributes(attributes)
 }
 
-public func ayuGramMessageMarkedDeleted(_ message: Message) -> StoreMessage {
+public func ayuGramMessageMarkedDeleted(_ message: Message, mediaBox: MediaBox? = nil) -> StoreMessage {
     let existing = message.ayuGramHistoryAttribute
     if existing?.isDeleted == true {
         return ayuGramStoreMessage(from: message, text: message.text, attributes: message.attributes)
@@ -116,6 +145,14 @@ public func ayuGramMessageMarkedDeleted(_ message: Message) -> StoreMessage {
     attributes.append(history)
 
     AyuGramArchiveStore.recordDeleted(message: message, history: history)
+    if let mediaBox {
+        AyuGramVaultStore.saveDeletedMediaIfAvailable(message: message, mediaBox: mediaBox)
+    }
+
+    let category = AyuGramSettings.category(message: message)
+    let peerTitle = message.peers[message.id.peerId]?.debugDisplayTitle ?? "Чат"
+    let authorTitle = message.author?.debugDisplayTitle ?? ""
+    let preview = AyuGramSettings.saveDeletedText ? String(message.text.prefix(240)) : ""
 
     DispatchQueue.main.async {
         NotificationCenter.default.post(
@@ -123,10 +160,15 @@ public func ayuGramMessageMarkedDeleted(_ message: Message) -> StoreMessage {
             object: nil,
             userInfo: [
                 "peerId": message.id.peerId.toInt64(),
-                "messageId": message.id.id
+                "messageId": message.id.id,
+                "peerTitle": peerTitle,
+                "authorTitle": authorTitle,
+                "preview": preview,
+                "category": category.rawValue,
+                "hasMedia": !message.media.isEmpty
             ]
         )
     }
 
-    return ayuGramStoreMessage(from: message, text: message.text, attributes: attributes)
+    return ayuGramStoreMessage(from: message, text: AyuGramSettings.saveDeletedText ? message.text : "", attributes: attributes)
 }

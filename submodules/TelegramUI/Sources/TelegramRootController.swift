@@ -33,6 +33,15 @@ import ChatEmptyNode
 import UndoUI
 import UserNotifications
 
+private struct AyuGramDeletionNotice {
+    let peerId: Int64
+    let peerTitle: String
+    let authorTitle: String
+    let preview: String
+    let category: AyuGramChatCategory
+    let hasMedia: Bool
+}
+
 private class DetailsChatPlaceholderNode: ASDisplayNode, NavigationDetailsPlaceholderNode {
     private var presentationData: PresentationData
     private var presentationInterfaceState: ChatPresentationInterfaceState
@@ -92,7 +101,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
     private var storyUploadEventsDisposable: Disposable?
     private var ayuGramDeletionObserver: NSObjectProtocol?
     private var ayuGramDeletionNotificationWorkItem: DispatchWorkItem?
-    private var ayuGramPendingDeletionCount: Int = 0
+    private var ayuGramPendingDeletionNotices: [AyuGramDeletionNotice] = []
     
     override public var minimizedContainer: MinimizedContainer? {
         didSet {
@@ -114,8 +123,8 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
             forName: .ayuGramMessageDeleted,
             object: nil,
             queue: .main,
-            using: { [weak self] _ in
-                self?.ayuGramMessageWasDeleted()
+            using: { [weak self] notification in
+                self?.ayuGramMessageWasDeleted(notification)
             }
         )
         
@@ -166,31 +175,56 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         }
     }
 
-    private func ayuGramMessageWasDeleted() {
+    private func ayuGramMessageWasDeleted(_ notification: Notification) {
         guard AyuGramSettings.deletionNotificationsEnabled else {
             return
         }
-
-        self.ayuGramPendingDeletionCount += 1
+        let info = notification.userInfo ?? [:]
+        let category = (info["category"] as? String).flatMap(AyuGramChatCategory.init(rawValue:)) ?? .unknown
+        guard AyuGramSettings.notificationEnabled(category) else {
+            return
+        }
+        let peerId = (info["peerId"] as? NSNumber)?.int64Value ?? 0
+        let notice = AyuGramDeletionNotice(
+            peerId: peerId,
+            peerTitle: (info["peerTitle"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "Чат",
+            authorTitle: info["authorTitle"] as? String ?? "",
+            preview: info["preview"] as? String ?? "",
+            category: category,
+            hasMedia: (info["hasMedia"] as? NSNumber)?.boolValue ?? false
+        )
+        self.ayuGramPendingDeletionNotices.append(notice)
         self.ayuGramDeletionNotificationWorkItem?.cancel()
 
         let workItem = DispatchWorkItem { [weak self] in
             guard let self else {
                 return
             }
-            let count = self.ayuGramPendingDeletionCount
-            self.ayuGramPendingDeletionCount = 0
-            let text: String
-            if count == 1 {
-                text = "AyuGram сохранил удалённое сообщение"
-            } else {
-                text = "AyuGram сохранил удалённые сообщения: \(count)"
+            let notices = self.ayuGramPendingDeletionNotices
+            self.ayuGramPendingDeletionNotices.removeAll()
+            guard let first = notices.first else {
+                return
             }
+            let peerIds = Set(notices.map(\.peerId))
+            let singlePeer = peerIds.count == 1
+            let count = notices.count
+            let text: String
+            if count == 1, !AyuGramSettings.hideNotificationContent, !first.preview.isEmpty {
+                let author = first.authorTitle.isEmpty || first.authorTitle == first.peerTitle ? "" : "\(first.authorTitle): "
+                text = "\(author)\(first.preview)"
+            } else if count == 1 {
+                text = first.hasMedia ? "Сохранено удалённое сообщение с медиа" : "Сохранено удалённое сообщение"
+            } else if singlePeer {
+                text = "Сохранено удалённых сообщений: \(count)"
+            } else {
+                text = "Сохранено удалённых сообщений из разных чатов: \(count)"
+            }
+            let overlayText = singlePeer ? "\(first.peerTitle) · \(text)" : text
 
             if UIApplication.shared.applicationState == .active {
                 let controller = UndoOverlayController(
                     presentationData: self.presentationData,
-                    content: .actionSucceeded(title: nil, text: text, cancel: nil, destructive: false),
+                    content: .actionSucceeded(title: "AyuGram", text: overlayText, cancel: nil, destructive: false),
                     elevatedLayout: false,
                     action: { _ in false }
                 )
@@ -202,9 +236,13 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                         return
                     }
                     let content = UNMutableNotificationContent()
-                    content.title = "AyuGram"
+                    content.title = singlePeer ? "AyuGram · \(first.peerTitle)" : "AyuGram"
                     content.body = text
                     content.sound = .default
+                    if singlePeer {
+                        content.threadIdentifier = "ayugram.\(first.peerId)"
+                        content.userInfo = ["peerId": first.peerId]
+                    }
                     let request = UNNotificationRequest(
                         identifier: "ayugram.deleted.\(UUID().uuidString)",
                         content: content,
@@ -215,7 +253,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
             }
         }
         self.ayuGramDeletionNotificationWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: workItem)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.55, execute: workItem)
     }
     
     public func getContactsController() -> ViewController? {

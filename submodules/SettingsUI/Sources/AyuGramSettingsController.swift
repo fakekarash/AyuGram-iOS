@@ -1,4 +1,6 @@
 import Foundation
+import UIKit
+import LocalAuthentication
 import Display
 import SwiftSignalKit
 import TelegramCore
@@ -11,17 +13,20 @@ private final class AyuGramSettingsControllerArguments {
     let update: (AyuGramSetting, Bool) -> Void
     let openUrl: (String) -> Void
     let openVault: () -> Void
+    let openRetention: () -> Void
     let cycleDeletedOpacity: () -> Void
 
     init(
         update: @escaping (AyuGramSetting, Bool) -> Void,
         openUrl: @escaping (String) -> Void,
         openVault: @escaping () -> Void,
+        openRetention: @escaping () -> Void,
         cycleDeletedOpacity: @escaping () -> Void
     ) {
         self.update = update
         self.openUrl = openUrl
         self.openVault = openVault
+        self.openRetention = openRetention
         self.cycleDeletedOpacity = cycleDeletedOpacity
     }
 }
@@ -87,6 +92,7 @@ private enum AyuGramSettingsEntry: ItemListNodeEntry {
     case deletionNotifications(Bool)
     case systemDeletionNotifications(Bool)
     case deletedOpacity(Int)
+    case retentionRules
     case antiRecallFooter
     case mediaHeader
     case restricted(Bool)
@@ -105,7 +111,7 @@ private enum AyuGramSettingsEntry: ItemListNodeEntry {
             return AyuGramSettingsSection.ghost.rawValue
         case .privacyHeader, .readReceipts, .storyViews, .typing, .offline:
             return AyuGramSettingsSection.privacy.rawValue
-        case .antiRecallHeader, .antiRecall, .editHistory, .deletedMarker, .deletionNotifications, .systemDeletionNotifications, .deletedOpacity, .antiRecallFooter:
+        case .antiRecallHeader, .antiRecall, .editHistory, .deletedMarker, .deletionNotifications, .systemDeletionNotifications, .deletedOpacity, .retentionRules, .antiRecallFooter:
             return AyuGramSettingsSection.antiRecall.rawValue
         case .mediaHeader, .restricted, .viewOnce, .vault, .openVault, .mediaFooter:
             return AyuGramSettingsSection.media.rawValue
@@ -131,17 +137,18 @@ private enum AyuGramSettingsEntry: ItemListNodeEntry {
         case .deletionNotifications: return 12
         case .systemDeletionNotifications: return 13
         case .deletedOpacity: return 14
-        case .antiRecallFooter: return 15
-        case .mediaHeader: return 16
-        case .restricted: return 17
-        case .viewOnce: return 18
-        case .vault: return 19
-        case .openVault: return 20
-        case .mediaFooter: return 21
-        case .linksHeader: return 22
-        case .github: return 23
-        case .telegram: return 24
-        case .version: return 25
+        case .retentionRules: return 15
+        case .antiRecallFooter: return 16
+        case .mediaHeader: return 17
+        case .restricted: return 18
+        case .viewOnce: return 19
+        case .vault: return 20
+        case .openVault: return 21
+        case .mediaFooter: return 22
+        case .linksHeader: return 23
+        case .github: return 24
+        case .telegram: return 25
+        case .version: return 26
         }
     }
 
@@ -182,6 +189,8 @@ private enum AyuGramSettingsEntry: ItemListNodeEntry {
             return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: "Системные уведомления", value: value, sectionId: self.section, style: .blocks, updated: { arguments.update(.systemDeletionNotificationsEnabled, $0) })
         case let .deletedOpacity(value):
             return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: "Видимость удалённых: \(value)%", kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: arguments.cycleDeletedOpacity)
+        case .retentionRules:
+            return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: "Источники, исключения и уведомления", kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: arguments.openRetention)
         case .antiRecallFooter:
             return ItemListTextItem(presentationData: presentationData, text: .plain("AyuGram сохраняет сообщения, которые уже были получены этим устройством. Предыдущие версии доступны по долгому нажатию на сообщение."), sectionId: self.section)
         case .mediaHeader:
@@ -227,6 +236,7 @@ private func ayuGramSettingsEntries() -> [AyuGramSettingsEntry] {
         .deletionNotifications(settings.deletionNotificationsEnabled),
         .systemDeletionNotifications(settings.systemDeletionNotificationsEnabled),
         .deletedOpacity(Int((settings.deletedMessageOpacity * 100.0).rounded())),
+        .retentionRules,
         .antiRecallFooter,
         .mediaHeader,
         .restricted(settings.saveRestrictedContent),
@@ -283,7 +293,28 @@ public func ayuGramSettingsController(context: AccountContext) -> ViewController
     }, openUrl: { url in
         context.sharedContext.applicationBindings.openUrl(url)
     }, openVault: {
-        controllerHolder.controller?.push(ayuGramVaultController(context: context))
+        let open: () -> Void = {
+            controllerHolder.controller?.push(ayuGramVaultController(context: context))
+        }
+        guard AyuGramSettings.vaultBiometricLockEnabled else {
+            open()
+            return
+        }
+        let authentication = LAContext()
+        var error: NSError?
+        guard authentication.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else {
+            let alert = UIAlertController(title: "AyuGram", message: "Face ID или Touch ID недоступны. Отключите защиту хранилища в правилах AyuGram.", preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            controllerHolder.controller?.present(alert, animated: true)
+            return
+        }
+        authentication.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: "Открыть хранилище AyuGram") { success, _ in
+            if success {
+                DispatchQueue.main.async(execute: open)
+            }
+        }
+    }, openRetention: {
+        controllerHolder.controller?.push(ayuGramRetentionController(context: context))
     }, cycleDeletedOpacity: {
         let current = AyuGramSettings.deletedMessageOpacity
         if current < 0.475 {

@@ -35,12 +35,36 @@ private final class AyuGramVaultPreviewController: QLPreviewController, QLPrevie
 private final class AyuGramVaultControllerArguments {
     let open: (AyuGramVaultItem) -> Void
     let openArchive: (AyuGramArchiveRecord) -> Void
+    let cycleFilter: () -> Void
+    let search: () -> Void
     let clearAll: () -> Void
 
-    init(open: @escaping (AyuGramVaultItem) -> Void, openArchive: @escaping (AyuGramArchiveRecord) -> Void, clearAll: @escaping () -> Void) {
+    init(open: @escaping (AyuGramVaultItem) -> Void, openArchive: @escaping (AyuGramArchiveRecord) -> Void, cycleFilter: @escaping () -> Void, search: @escaping () -> Void, clearAll: @escaping () -> Void) {
         self.open = open
         self.openArchive = openArchive
+        self.cycleFilter = cycleFilter
+        self.search = search
         self.clearAll = clearAll
+    }
+}
+
+private enum AyuGramVaultFilter: Int32 {
+    case all
+    case deleted
+    case edited
+    case media
+
+    var title: String {
+        switch self {
+        case .all: return "Все"
+        case .deleted: return "Удалённые"
+        case .edited: return "Изменённые"
+        case .media: return "Медиа"
+        }
+    }
+
+    var next: AyuGramVaultFilter {
+        return AyuGramVaultFilter(rawValue: self.rawValue + 1) ?? .all
     }
 }
 
@@ -50,6 +74,7 @@ private final class AyuGramVaultControllerHolder {
 
 private enum AyuGramVaultSection: Int32 {
     case summary
+    case controls
     case files
     case archive
     case actions
@@ -57,6 +82,8 @@ private enum AyuGramVaultSection: Int32 {
 
 private enum AyuGramVaultEntry: ItemListNodeEntry {
     case summary(String)
+    case filter(String)
+    case search(String)
     case empty
     case file(Int32, AyuGramVaultItem, String)
     case archiveHeader
@@ -67,6 +94,8 @@ private enum AyuGramVaultEntry: ItemListNodeEntry {
         switch self {
         case .summary:
             return AyuGramVaultSection.summary.rawValue
+        case .filter, .search:
+            return AyuGramVaultSection.controls.rawValue
         case .empty, .file:
             return AyuGramVaultSection.files.rawValue
         case .archiveHeader, .archive:
@@ -80,6 +109,10 @@ private enum AyuGramVaultEntry: ItemListNodeEntry {
         switch self {
         case .summary:
             return 0
+        case .filter:
+            return 2
+        case .search:
+            return 3
         case .empty:
             return 1
         case let .file(index, _, _):
@@ -102,8 +135,12 @@ private enum AyuGramVaultEntry: ItemListNodeEntry {
         switch self {
         case let .summary(text):
             return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
+        case let .filter(title):
+            return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: "Фильтр: \(title)", kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: arguments.cycleFilter)
+        case let .search(query):
+            return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: query.isEmpty ? "Поиск" : "Поиск: \(query)", kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: arguments.search)
         case .empty:
-            return ItemListTextItem(presentationData: presentationData, text: .plain("Хранилище пока пусто. Откройте одноразовое медиа и нажмите «Сохранить в AyuGram»."), sectionId: self.section)
+            return ItemListTextItem(presentationData: presentationData, text: .plain("Нет записей для выбранного фильтра или поискового запроса."), sectionId: self.section)
         case let .file(_, item, title):
             return ItemListActionItem(
                 presentationData: presentationData,
@@ -143,15 +180,32 @@ private enum AyuGramVaultEntry: ItemListNodeEntry {
     }
 }
 
-private func ayuGramVaultEntries() -> [AyuGramVaultEntry] {
-    let items = AyuGramVaultStore.items()
-    let records = AyuGramArchiveStore.records()
+private func ayuGramVaultEntries(filter: AyuGramVaultFilter, query: String) -> [AyuGramVaultEntry] {
+    let normalizedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    let allItems = AyuGramVaultStore.items()
+    let allRecords = AyuGramArchiveStore.records()
+    let items = allItems.filter { item in
+        guard filter == .all || filter == .media else { return false }
+        guard !normalizedQuery.isEmpty else { return true }
+        return [item.originalFilename, item.storedFilename, item.peerTitle, item.authorTitle]
+            .compactMap { $0 }.joined(separator: " ").lowercased().contains(normalizedQuery)
+    }
+    let records = allRecords.filter { record in
+        if filter == .media { return false }
+        if filter == .deleted && !record.isDeleted { return false }
+        if filter == .edited && (record.previousTexts.isEmpty || record.isDeleted) { return false }
+        guard !normalizedQuery.isEmpty else { return true }
+        return ([record.text, record.peerTitle ?? "", record.authorTitle ?? ""] + record.previousTexts + (record.mediaKinds ?? []))
+            .joined(separator: " ").lowercased().contains(normalizedQuery)
+    }
     let formatter = ByteCountFormatter()
     formatter.allowedUnits = [.useKB, .useMB, .useGB]
     formatter.countStyle = .file
 
     var result: [AyuGramVaultEntry] = [
-        .summary("Файлов: \(items.count) · \(formatter.string(fromByteCount: items.reduce(0) { $0 + $1.byteCount }))\nЗаписей сообщений: \(records.count)\nВсе данные находятся только на этом устройстве.")
+        .summary("Файлов: \(allItems.count) · \(formatter.string(fromByteCount: allItems.reduce(0) { $0 + $1.byteCount }))\nЗаписей сообщений: \(allRecords.count)\nПоказано: \(items.count + records.count). Все данные находятся только на этом устройстве."),
+        .filter(filter.title),
+        .search(query)
     ]
     if items.isEmpty && records.isEmpty {
         result.append(.empty)
@@ -159,7 +213,8 @@ private func ayuGramVaultEntries() -> [AyuGramVaultEntry] {
         for (index, item) in items.enumerated() {
             let name = item.originalFilename ?? item.storedFilename
             let size = formatter.string(fromByteCount: item.byteCount)
-            result.append(.file(Int32(index), item, "\(item.kind.title): \(name) · \(size)"))
+            let chat = item.peerTitle.map { "\($0) · " } ?? ""
+            result.append(.file(Int32(index), item, "\(chat)\(item.kind.title): \(name) · \(size)"))
         }
     }
     if !records.isEmpty {
@@ -168,10 +223,11 @@ private func ayuGramVaultEntries() -> [AyuGramVaultEntry] {
             let normalized = record.text.replacingOccurrences(of: "\n", with: " ")
             let preview = normalized.isEmpty ? "медиа или сообщение без текста" : String(normalized.prefix(72))
             let kind = record.isDeleted ? "Удалено" : "Изменено"
-            result.append(.archive(Int32(index), record, "\(kind): \(preview)"))
+            let chat = record.peerTitle.map { "\($0) · " } ?? ""
+            result.append(.archive(Int32(index), record, "\(chat)\(kind): \(preview)"))
         }
     }
-    if !items.isEmpty || !records.isEmpty {
+    if !allItems.isEmpty || !allRecords.isEmpty {
         result.append(.clearAll)
     }
     return result
@@ -180,6 +236,8 @@ private func ayuGramVaultEntries() -> [AyuGramVaultEntry] {
 public func ayuGramVaultController(context: AccountContext) -> ViewController {
     let revision = ValuePromise<Int32>(0, ignoreRepeated: false)
     let revisionValue = Atomic<Int32>(value: 0)
+    let filterValue = Atomic<AyuGramVaultFilter>(value: .all)
+    let queryValue = Atomic<String>(value: "")
     let controllerHolder = AyuGramVaultControllerHolder()
 
     let refresh: () -> Void = {
@@ -192,7 +250,13 @@ public func ayuGramVaultController(context: AccountContext) -> ViewController {
         formatter.countStyle = .file
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
         let title = item.originalFilename ?? item.storedFilename
-        let details = "\(item.kind.title)\n\(formatter.string(fromByteCount: item.byteCount))"
+        var details = "\(item.kind.title)\n\(formatter.string(fromByteCount: item.byteCount))"
+        if let peerTitle = item.peerTitle {
+            details += "\nЧат: \(peerTitle)"
+        }
+        if let authorTitle = item.authorTitle, authorTitle != item.peerTitle {
+            details += "\nАвтор: \(authorTitle)"
+        }
         let alert = textAlertController(
             context: context,
             updatedPresentationData: nil,
@@ -222,8 +286,14 @@ public func ayuGramVaultController(context: AccountContext) -> ViewController {
                     AyuGramVaultStore.remove(item)
                     refresh()
                 }),
+                TextAlertAction(type: .destructiveAction, title: "Очистить этот чат", action: {
+                    AyuGramVaultStore.remove(peerId: item.peerId)
+                    AyuGramArchiveStore.remove(peerId: item.peerId)
+                    refresh()
+                }),
                 TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {})
-            ]
+            ],
+            actionLayout: .vertical
         )
         controllerHolder.controller?.present(alert, in: .window(.root))
     }, openArchive: { record in
@@ -232,6 +302,16 @@ public func ayuGramVaultController(context: AccountContext) -> ViewController {
         dateFormatter.dateStyle = .medium
         dateFormatter.timeStyle = .medium
         var lines: [String] = []
+        if let peerTitle = record.peerTitle {
+            lines.append("Чат: \(peerTitle)")
+        }
+        if let authorTitle = record.authorTitle, authorTitle != record.peerTitle {
+            lines.append("Автор: \(authorTitle)")
+        }
+        if let mediaKinds = record.mediaKinds, !mediaKinds.isEmpty {
+            lines.append("Медиа: \(mediaKinds.joined(separator: ", "))")
+        }
+        lines.append("ID чата: \(record.peerId) · ID сообщения: \(record.messageId)")
         if record.isDeleted {
             lines.append("Удалено: " + dateFormatter.string(from: Date(timeIntervalSince1970: TimeInterval(record.deletionTimestamp))))
         }
@@ -248,17 +328,53 @@ public func ayuGramVaultController(context: AccountContext) -> ViewController {
             title: record.isDeleted ? "Удалённое сообщение" : "История изменений",
             text: lines.joined(separator: "\n\n"),
             actions: [
+                TextAlertAction(type: .defaultAction, title: "Поделиться", action: {
+                    Queue.mainQueue().after(0.2) {
+                        let share = UIActivityViewController(activityItems: [lines.joined(separator: "\n\n")], applicationActivities: nil)
+                        if let popover = share.popoverPresentationController, let view = controllerHolder.controller?.view {
+                            popover.sourceView = view
+                            popover.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 1.0, height: 1.0)
+                        }
+                        controllerHolder.controller?.present(share, animated: true, completion: nil)
+                    }
+                }),
                 TextAlertAction(type: .defaultAction, title: "Копировать", action: {
                     UIPasteboard.general.string = lines.joined(separator: "\n\n")
+                }),
+                TextAlertAction(type: .destructiveAction, title: "Очистить этот чат", action: {
+                    AyuGramVaultStore.remove(peerId: record.peerId)
+                    AyuGramArchiveStore.remove(peerId: record.peerId)
+                    refresh()
                 }),
                 TextAlertAction(type: .destructiveAction, title: "Удалить запись", action: {
                     AyuGramArchiveStore.remove(record)
                     refresh()
                 }),
                 TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {})
-            ]
+            ],
+            actionLayout: .vertical
         )
         controllerHolder.controller?.present(alert, in: .window(.root))
+    }, cycleFilter: {
+        _ = filterValue.modify { $0.next }
+        revision.set(revisionValue.modify { $0 + 1 })
+    }, search: {
+        let alert = UIAlertController(title: "Поиск в хранилище", message: "Введите чат, автора, текст или имя файла.", preferredStyle: .alert)
+        alert.addTextField { textField in
+            textField.text = queryValue.with { $0 }
+            textField.placeholder = "Поиск"
+            textField.clearButtonMode = .whileEditing
+        }
+        alert.addAction(UIAlertAction(title: "Сбросить", style: .destructive, handler: { _ in
+            _ = queryValue.swap("")
+            revision.set(revisionValue.modify { $0 + 1 })
+        }))
+        alert.addAction(UIAlertAction(title: "Найти", style: .default, handler: { _ in
+            _ = queryValue.swap(alert.textFields?.first?.text ?? "")
+            revision.set(revisionValue.modify { $0 + 1 })
+        }))
+        alert.addAction(UIAlertAction(title: "Отмена", style: .cancel))
+        controllerHolder.controller?.present(alert, animated: true)
     }, clearAll: {
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
         let alert = textAlertController(
@@ -290,7 +406,7 @@ public func ayuGramVaultController(context: AccountContext) -> ViewController {
         )
         let listState = ItemListNodeState(
             presentationData: itemPresentationData,
-            entries: ayuGramVaultEntries(),
+            entries: ayuGramVaultEntries(filter: filterValue.with { $0 }, query: queryValue.with { $0 }),
             style: .blocks,
             animateChanges: true
         )

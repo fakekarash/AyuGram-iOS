@@ -4598,10 +4598,18 @@ func replayFinalState(
                 deleteEphemeralMessages(transaction: transaction, peerId: peerId, ids: ids)
             case let .DeleteMessagesWithGlobalIds(ids):
                 if AyuGramSettings.antiRecallEnabled {
-                    for messageId in transaction.messageIdsForGlobalIds(ids) where messageId.namespace == Namespaces.Message.Cloud {
-                        transaction.updateMessage(messageId, update: { currentMessage in
-                            return .update(ayuGramMessageMarkedDeleted(currentMessage))
-                        })
+                    var unprotectedIds: [MessageId] = []
+                    for messageId in transaction.messageIdsForGlobalIds(ids) {
+                        if messageId.namespace == Namespaces.Message.Cloud, let message = transaction.getMessage(messageId), ayuGramShouldPreserveDeletedMessage(message) {
+                            transaction.updateMessage(messageId, update: { currentMessage in
+                                return .update(ayuGramMessageMarkedDeleted(currentMessage, mediaBox: mediaBox))
+                            })
+                        } else {
+                            unprotectedIds.append(messageId)
+                        }
+                    }
+                    if !unprotectedIds.isEmpty {
+                        _internal_deleteMessages(transaction: transaction, mediaBox: mediaBox, ids: unprotectedIds)
                     }
                 } else {
                     var resourceIds: [MediaResourceId] = []
@@ -4617,9 +4625,9 @@ func replayFinalState(
                 if AyuGramSettings.antiRecallEnabled {
                     var unprotectedIds: [MessageId] = []
                     for id in ids {
-                        if id.namespace == Namespaces.Message.Cloud, transaction.getMessage(id) != nil {
+                        if id.namespace == Namespaces.Message.Cloud, let message = transaction.getMessage(id), ayuGramShouldPreserveDeletedMessage(message) {
                             transaction.updateMessage(id, update: { currentMessage in
-                                return .update(ayuGramMessageMarkedDeleted(currentMessage))
+                                return .update(ayuGramMessageMarkedDeleted(currentMessage, mediaBox: mediaBox))
                             })
                         } else {
                             unprotectedIds.append(id)
@@ -4643,16 +4651,24 @@ func replayFinalState(
                 }
                 if AyuGramSettings.antiRecallEnabled && id.namespace == Namespaces.Message.Cloud {
                     var messageIds: [MessageId] = []
+                    var unprotectedIds: [MessageId] = []
                     transaction.withAllMessages(peerId: id.peerId, namespace: id.namespace, { message in
                         if message.id.id <= id.id {
-                            messageIds.append(message.id)
+                            if ayuGramShouldPreserveDeletedMessage(message) {
+                                messageIds.append(message.id)
+                            } else {
+                                unprotectedIds.append(message.id)
+                            }
                         }
                         return true
                     })
                     for messageId in messageIds {
                         transaction.updateMessage(messageId, update: { currentMessage in
-                            return .update(ayuGramMessageMarkedDeleted(currentMessage))
+                            return .update(ayuGramMessageMarkedDeleted(currentMessage, mediaBox: mediaBox))
                         })
+                    }
+                    if !unprotectedIds.isEmpty {
+                        _internal_deleteMessages(transaction: transaction, mediaBox: mediaBox, ids: unprotectedIds)
                     }
                 } else {
                     var resourceIds: [MediaResourceId] = []

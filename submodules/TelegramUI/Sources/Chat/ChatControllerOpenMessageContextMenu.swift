@@ -116,6 +116,28 @@ extension ChatControllerImpl {
                         actions.content = .list(items)
                     }
                 }
+                if case let .list(currentItems) = actions.content {
+                    var items = currentItems
+                    let currentRule = AyuGramSettings.peerRule(message.id.peerId)
+                    let nextRule: AyuGramPeerRule
+                    let title: String
+                    switch currentRule {
+                    case .inherit:
+                        nextRule = .always
+                        title = "AyuGram: всегда сохранять этот чат"
+                    case .always:
+                        nextRule = .never
+                        title = "AyuGram: никогда не сохранять этот чат"
+                    case .never:
+                        nextRule = .inherit
+                        title = "AyuGram: использовать общие настройки"
+                    }
+                    items.insert(.action(ContextMenuActionItem(text: title, icon: { _ in nil }, action: { _, completion in
+                        AyuGramSettings.setPeerRule(nextRule, peerId: message.id.peerId)
+                        completion(.default)
+                    })), at: 0)
+                    actions.content = .list(items)
+                }
                 switch actions.content {
                 case let .list(itemList):
                     if itemList.isEmpty {

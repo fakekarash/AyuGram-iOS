@@ -984,9 +984,9 @@ private func validateBatch(postbox: Postbox, network: Network, transaction: Tran
                                         return .update(StoreMessage(id: currentMessage.id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: updatedTags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: attributes, media: currentMessage.media))
                                     })
                                 } else {
-                                    if AyuGramSettings.antiRecallEnabled, id.namespace == Namespaces.Message.Cloud, transaction.getMessage(id) != nil {
+                                    if AyuGramSettings.antiRecallEnabled, id.namespace == Namespaces.Message.Cloud, let message = transaction.getMessage(id), ayuGramShouldPreserveDeletedMessage(message) {
                                         transaction.updateMessage(id, update: { currentMessage in
-                                            return .update(ayuGramMessageMarkedDeleted(currentMessage))
+                                            return .update(ayuGramMessageMarkedDeleted(currentMessage, mediaBox: postbox.mediaBox))
                                         })
                                         Logger.shared.log("HistoryValidation", "AyuGram preserved deleted message \(id) in \(id.peerId)")
                                     } else {
@@ -1174,9 +1174,9 @@ private func validateReplyThreadBatch(postbox: Postbox, network: Network, transa
                 
                     for id in removedMessageIds {
                         if !validMessageIds.contains(id) {
-                            if AyuGramSettings.antiRecallEnabled, id.namespace == Namespaces.Message.Cloud, transaction.getMessage(id) != nil {
+                            if AyuGramSettings.antiRecallEnabled, id.namespace == Namespaces.Message.Cloud, let message = transaction.getMessage(id), ayuGramShouldPreserveDeletedMessage(message) {
                                 transaction.updateMessage(id, update: { currentMessage in
-                                    return .update(ayuGramMessageMarkedDeleted(currentMessage))
+                                    return .update(ayuGramMessageMarkedDeleted(currentMessage, mediaBox: postbox.mediaBox))
                                 })
                                 Logger.shared.log("HistoryValidation", "AyuGram preserved deleted thread message \(id) in \(id.peerId)")
                             } else {

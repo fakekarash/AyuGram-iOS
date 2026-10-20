@@ -131,7 +131,7 @@ private func ayuGramSaveViewOnceMedia(
     explicit: Bool,
     completion: ((Result<AyuGramVaultItem, Error>) -> Void)? = nil
 ) {
-    guard AyuGramSettings.vaultEnabled, explicit || AyuGramSettings.preserveViewOnceMedia else {
+    guard AyuGramSettings.vaultEnabled, explicit || (AyuGramSettings.preserveViewOnceMedia && AyuGramSettings.shouldPreserve(message: message)) else {
         completion?(.failure(AyuGramViewOnceSaveError.disabled))
         return
     }

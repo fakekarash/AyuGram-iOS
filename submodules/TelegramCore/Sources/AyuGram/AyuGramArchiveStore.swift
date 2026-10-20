@@ -12,6 +12,9 @@ public struct AyuGramArchiveRecord: Codable, Equatable {
     public let editTimestamps: [Int32]
     public let isDeleted: Bool
     public let deletionTimestamp: Int32
+    public let peerTitle: String?
+    public let authorTitle: String?
+    public let mediaKinds: [String]?
 }
 
 public enum AyuGramArchiveStore {
@@ -46,10 +49,48 @@ public enum AyuGramArchiveStore {
             try self.ensureDirectory()
             let data = try JSONEncoder().encode(record)
             try data.write(to: self.url(id: record.id), options: .atomic)
+            self.performMaintenanceLocked()
             DispatchQueue.main.async {
                 NotificationCenter.default.post(name: .ayuGramArchiveChanged, object: nil)
             }
         } catch {
+        }
+    }
+
+    private static func mediaKinds(message: Message) -> [String] {
+        var result: [String] = []
+        for media in message.media {
+            if media is TelegramMediaImage {
+                result.append("Фото")
+            } else if let file = media as? TelegramMediaFile {
+                if file.isVoice {
+                    result.append("Голосовое сообщение")
+                } else if file.isVideo || file.isInstantVideo {
+                    result.append("Видео")
+                } else if file.isSticker || file.isAnimated || file.isAnimatedSticker {
+                    result.append("Стикер или GIF")
+                } else {
+                    result.append(file.fileName ?? "Файл")
+                }
+            }
+        }
+        return result
+    }
+
+    private static func performMaintenanceLocked() {
+        let retentionDays = AyuGramSettings.retentionDays
+        guard retentionDays > 0, let urls = try? FileManager.default.contentsOfDirectory(at: self.rootURL, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]) else {
+            return
+        }
+        let cutoff = Int32(clamping: Int64(Date().timeIntervalSince1970) - Int64(retentionDays * 24 * 60 * 60))
+        for url in urls where url.pathExtension.lowercased() == "json" {
+            guard let data = try? Data(contentsOf: url), let record = try? JSONDecoder().decode(AyuGramArchiveRecord.self, from: data) else {
+                continue
+            }
+            let timestamp = record.isDeleted ? record.deletionTimestamp : (record.editTimestamps.last ?? record.messageTimestamp)
+            if timestamp < cutoff {
+                try? FileManager.default.removeItem(at: url)
+            }
         }
     }
 
@@ -63,11 +104,14 @@ public enum AyuGramArchiveStore {
                 messageId: message.id.id,
                 authorId: message.author?.id.toInt64(),
                 messageTimestamp: message.timestamp,
-                text: message.text,
+                text: AyuGramSettings.saveDeletedText ? message.text : "",
                 previousTexts: history.previousTexts.isEmpty ? (existing?.previousTexts ?? []) : history.previousTexts,
                 editTimestamps: history.editTimestamps.isEmpty ? (existing?.editTimestamps ?? []) : history.editTimestamps,
                 isDeleted: true,
-                deletionTimestamp: history.deletionTimestamp
+                deletionTimestamp: history.deletionTimestamp,
+                peerTitle: message.peers[message.id.peerId]?.debugDisplayTitle,
+                authorTitle: message.author?.debugDisplayTitle,
+                mediaKinds: self.mediaKinds(message: message)
             ))
         }
     }
@@ -91,7 +135,10 @@ public enum AyuGramArchiveStore {
                 previousTexts: previousTexts,
                 editTimestamps: editTimestamps,
                 isDeleted: existing?.isDeleted ?? false,
-                deletionTimestamp: existing?.deletionTimestamp ?? 0
+                deletionTimestamp: existing?.deletionTimestamp ?? 0,
+                peerTitle: message.peers[message.id.peerId]?.debugDisplayTitle,
+                authorTitle: message.author?.debugDisplayTitle,
+                mediaKinds: existing?.mediaKinds
             ))
         }
     }
@@ -119,9 +166,35 @@ public enum AyuGramArchiveStore {
         }
     }
 
+    public static func performMaintenance() {
+        self.queue.sync {
+            self.performMaintenanceLocked()
+        }
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .ayuGramArchiveChanged, object: nil)
+        }
+    }
+
     public static func remove(_ record: AyuGramArchiveRecord) {
         self.queue.sync {
             try? FileManager.default.removeItem(at: self.url(id: record.id))
+        }
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .ayuGramArchiveChanged, object: nil)
+        }
+    }
+
+    public static func remove(peerId: Int64) {
+        self.queue.sync {
+            guard let urls = try? FileManager.default.contentsOfDirectory(at: self.rootURL, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]) else {
+                return
+            }
+            for url in urls where url.pathExtension.lowercased() == "json" {
+                guard let data = try? Data(contentsOf: url), let record = try? JSONDecoder().decode(AyuGramArchiveRecord.self, from: data), record.peerId == peerId else {
+                    continue
+                }
+                try? FileManager.default.removeItem(at: url)
+            }
         }
         DispatchQueue.main.async {
             NotificationCenter.default.post(name: .ayuGramArchiveChanged, object: nil)
