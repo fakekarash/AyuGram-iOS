@@ -48,12 +48,7 @@ public final class AyuGramCalculatorController: ViewController {
         node.backgroundColor = .black
         self.displayNode = node
         self.displayNodeDidLoad()
-    }
 
-    override public func viewDidLoad() {
-        super.viewDidLoad()
-
-        self.view.backgroundColor = UIColor.black
         self.statusBar.updateStatusBarStyle(.White, animated: false)
 
         self.engine.unlockCode = AyuGramSettings.calculatorUnlockCode
@@ -68,10 +63,10 @@ public final class AyuGramCalculatorController: ViewController {
         self.displayLabel.minimumScaleFactor = 0.35
         self.displayLabel.numberOfLines = 1
         self.displayLabel.font = UIFont.systemFont(ofSize: 72.0, weight: .light)
-        self.view.addSubview(self.displayLabel)
+        node.view.addSubview(self.displayLabel)
 
         self.keypadView.backgroundColor = .clear
-        self.view.addSubview(self.keypadView)
+        node.view.addSubview(self.keypadView)
 
         self.keyModels = [
             .clear, .negate, .percent, .operation(.divide),
