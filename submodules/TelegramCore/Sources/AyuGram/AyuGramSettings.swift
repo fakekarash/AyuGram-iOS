@@ -184,6 +184,18 @@ public enum AyuGramSettings {
         set { self.setValue(newValue, "saveBots") }
     }
 
+    /// AyuGram keeps public channels and public groups out of the archive by
+    /// default, because they are the usual source of unwanted saved content.
+    public static var savePublicChannels: Bool {
+        get { self.value("savePublicChannels", default: false) }
+        set { self.setValue(newValue, "savePublicChannels") }
+    }
+
+    public static var savePublicGroups: Bool {
+        get { self.value("savePublicGroups", default: false) }
+        set { self.setValue(newValue, "savePublicGroups") }
+    }
+
     public static var saveDeletedText: Bool {
         get { self.value("saveDeletedText", default: true) }
         set { self.setValue(newValue, "saveDeletedText") }
@@ -341,8 +353,33 @@ public enum AyuGramSettings {
         case .never:
             return false
         case .inherit:
-            return self.categoryEnabled(self.category(message: message))
+            let category = self.category(message: message)
+            guard self.categoryEnabled(category) else {
+                return false
+            }
+            let peer = message.peers[message.id.peerId]
+            if self.isPublicPeer(peer) {
+                switch category {
+                case .channel:
+                    return self.savePublicChannels
+                case .group:
+                    return self.savePublicGroups
+                default:
+                    break
+                }
+            }
+            return true
         }
+    }
+
+    public static func isPublicPeer(_ peer: Peer?) -> Bool {
+        guard let channel = peer as? TelegramChannel else {
+            return false
+        }
+        if channel.username != nil {
+            return true
+        }
+        return !channel.usernames.isEmpty
     }
 
     public static var deletedMessageOpacity: Double {
