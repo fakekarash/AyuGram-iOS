@@ -101,6 +101,13 @@ public enum AyuGramSettings {
         set { self.setValue(newValue, "stayOffline") }
     }
 
+    /// Report the read position only when the user actually replies, instead of
+    /// never reporting anything while Ghost Mode is on.
+    public static var markReadAfterSend: Bool {
+        get { self.value("markReadAfterSend", default: false) }
+        set { self.setValue(newValue, "markReadAfterSend") }
+    }
+
     public static var saveRestrictedContent: Bool {
         get { self.value("saveRestrictedContent", default: false) }
         set { self.setValue(newValue, "saveRestrictedContent") }

@@ -22,6 +22,7 @@ private final class AyuGramGhostControllerHolder {
 private enum AyuGramGhostSetting {
     case enabled
     case reads
+    case markReadAfterSend
     case stories
     case typing
     case offline
@@ -37,6 +38,7 @@ private enum AyuGramGhostEntry: ItemListNodeEntry {
     case master(Bool)
     case detailsHeader(String)
     case reads(Bool)
+    case markReadAfterSend(Bool)
     case stories(Bool)
     case typing(Bool)
     case offline(Bool)
@@ -46,7 +48,7 @@ private enum AyuGramGhostEntry: ItemListNodeEntry {
         switch self {
         case .master:
             return AyuGramGhostSection.master.rawValue
-        case .detailsHeader, .reads, .stories, .typing, .offline:
+        case .detailsHeader, .reads, .markReadAfterSend, .stories, .typing, .offline:
             return AyuGramGhostSection.details.rawValue
         case .footer:
             return AyuGramGhostSection.footer.rawValue
@@ -58,10 +60,11 @@ private enum AyuGramGhostEntry: ItemListNodeEntry {
         case .master: return 0
         case .detailsHeader: return 1
         case .reads: return 2
-        case .stories: return 3
-        case .typing: return 4
-        case .offline: return 5
-        case .footer: return 6
+        case .markReadAfterSend: return 3
+        case .stories: return 4
+        case .typing: return 5
+        case .offline: return 6
+        case .footer: return 7
         }
     }
 
@@ -78,6 +81,8 @@ private enum AyuGramGhostEntry: ItemListNodeEntry {
             return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: strings.ghostMaster, value: value, sectionId: self.section, style: .blocks, updated: { arguments.update(.enabled, $0) })
         case let .detailsHeader(text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
+        case let .markReadAfterSend(value):
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: strings.markReadAfterSend, value: value, enabled: masterEnabled, sectionId: self.section, style: .blocks, updated: { arguments.update(.markReadAfterSend, $0) })
         case let .reads(value):
             return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: strings.hideReads, value: value, enabled: masterEnabled, sectionId: self.section, style: .blocks, updated: { arguments.update(.reads, $0) })
         case let .stories(value):
@@ -97,6 +102,7 @@ private func ayuGramGhostEntries(strings: AyuGramStrings) -> [AyuGramGhostEntry]
         .master(AyuGramSettings.ghostModeEnabled),
         .detailsHeader(strings.ghostHeader),
         .reads(AyuGramSettings.hideReadReceiptsOption),
+        .markReadAfterSend(AyuGramSettings.markReadAfterSend),
         .stories(AyuGramSettings.hideStoryViewsOption),
         .typing(AyuGramSettings.hideTypingOption),
         .offline(AyuGramSettings.stayOfflineOption),
@@ -119,6 +125,7 @@ public func ayuGramGhostController(context: AccountContext) -> ViewController {
         switch setting {
         case .enabled: AyuGramSettings.ghostModeEnabled = value
         case .reads: AyuGramSettings.hideReadReceiptsOption = value
+        case .markReadAfterSend: AyuGramSettings.markReadAfterSend = value
         case .stories: AyuGramSettings.hideStoryViewsOption = value
         case .typing: AyuGramSettings.hideTypingOption = value
         case .offline: AyuGramSettings.stayOfflineOption = value

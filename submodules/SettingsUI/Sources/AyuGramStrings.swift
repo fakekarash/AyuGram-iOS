@@ -34,6 +34,7 @@ public struct AyuGramStrings {
     public var ghostHeader: String { self.localized("ПРИЗРАК", "GHOST MODE") }
     public var ghostMaster: String { self.localized("Включить Режим Призрака", "Enable Ghost Mode") }
     public var hideReads: String { self.localized("Не отправлять прочтение", "Do not send read receipts") }
+    public var markReadAfterSend: String { self.localized("Читать после ответа", "Mark read after replying") }
     public var hideStories: String { self.localized("Скрывать просмотры историй", "Hide story views") }
     public var hideTyping: String { self.localized("Скрывать набор текста", "Hide typing") }
     public var stayOffline: String { self.localized("Всегда офлайн", "Always offline") }

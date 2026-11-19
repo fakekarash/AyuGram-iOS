@@ -44,6 +44,10 @@ func _internal_applyMaxReadIndexInteractively(transaction: Transaction, stateMan
     if AyuGramSettings.hideReadReceipts {
         if index.id.peerId.namespace != Namespaces.Peer.SecretChat {
             transaction.applyIncomingReadMaxId(index.id)
+            // AyuGram: remember the position; it is reported once the user replies.
+            if AyuGramSettings.markReadAfterSend {
+                AyuGramDeferredReadRegistry.shared.store(peerId: index.id.peerId, index: index)
+            }
         }
         return
     }
@@ -104,8 +108,23 @@ func _internal_applyMaxReadIndexInteractively(transaction: Transaction, stateMan
     }
 }
 
-func applyOutgoingReadMaxIndex(transaction: Transaction, index: MessageIndex, beginCountdownAt timestamp: Int32) {
-    let messageIds = transaction.applyOutgoingReadMaxIndex(index)
+/// AyuGram: reports the read position that Ghost Mode deferred until the user
+/// actually sends a message in that chat.
+func _internal_flushDeferredReadReceipts(transaction: Transaction, stateManager: AccountStateManager, peerId: PeerId) {
+    guard AyuGramSettings.markReadAfterSend, AyuGramSettings.hideReadReceipts else {
+        return
+    }
+    guard peerId.namespace == Namespaces.Peer.CloudUser || peerId.namespace == Namespaces.Peer.CloudGroup || peerId.namespace == Namespaces.Peer.CloudChannel else {
+        return
+    }
+    guard let index = AyuGramDeferredReadRegistry.shared.take(peerId: peerId) else {
+        return
+    }
+    let _ = transaction.applyInteractiveReadMaxIndex(index)
+    stateManager.notifyAppliedIncomingReadMessages([index.id])
+}
+
+func applyOutgoingReadMaxIndex(transaction: Transaction, index: MessageIndex, beginCountdownAt timestamp: Int32) {    let messageIds = transaction.applyOutgoingReadMaxIndex(index)
     if index.id.peerId.namespace == Namespaces.Peer.SecretChat {
         for id in messageIds {
             applySecretOutgoingMessageReadActions(transaction: transaction, id: id, beginCountdownAt: timestamp)

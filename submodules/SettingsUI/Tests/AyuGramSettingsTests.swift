@@ -30,6 +30,7 @@ final class AyuGramSettingsTests: XCTestCase {
         XCTAssertTrue(AyuGramSettings.hideStoryViewsOption)
         XCTAssertTrue(AyuGramSettings.hideTypingOption)
         XCTAssertTrue(AyuGramSettings.stayOfflineOption)
+        XCTAssertFalse(AyuGramSettings.markReadAfterSend)
 
         XCTAssertTrue(AyuGramSettings.antiRecallEnabled)
         XCTAssertTrue(AyuGramSettings.editHistoryEnabled)

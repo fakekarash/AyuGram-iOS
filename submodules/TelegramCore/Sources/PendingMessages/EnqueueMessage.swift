@@ -729,6 +729,9 @@ public func enqueueMessages(account: Account, peerId: PeerId, messages: [Enqueue
                 }
             }
 
+            // AyuGram: replying is what reports the deferred read receipt.
+            _internal_flushDeferredReadReceipts(transaction: transaction, stateManager: account.stateManager, peerId: peerId)
+
             return (resultIds, ephemeralMessageIds)
         }
         |> map { resultIds, ephemeralMessageIds -> [MessageId?] in
