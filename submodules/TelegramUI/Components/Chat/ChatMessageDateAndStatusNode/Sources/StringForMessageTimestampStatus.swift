@@ -261,5 +261,9 @@ public func stringForMessageTimestampStatus(
         return "\(mark) · \(dateText)"
     }
 
+    if AyuGramSettings.showEditedMessageMark, let editedTime = message.editedTime, editedTime != 0 {
+        return "\(dateText) ✎"
+    }
+
     return dateText
 }

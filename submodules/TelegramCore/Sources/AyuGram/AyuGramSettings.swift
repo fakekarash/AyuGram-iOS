@@ -150,6 +150,11 @@ public enum AyuGramSettings {
         return self.deletedMarkPresets[self.deletedMarkPreset]
     }
 
+    public static var showEditedMessageMark: Bool {
+        get { self.value("showEditedMessageMark", default: false) }
+        set { self.setValue(newValue, "showEditedMessageMark") }
+    }
+
     public static var deletedMarkPresetCount: Int {
         return self.deletedMarkPresets.count
     }
