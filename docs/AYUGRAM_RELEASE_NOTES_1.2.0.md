@@ -2,6 +2,18 @@
 
 Сборка поверх Telegram-iOS 13.0. Ветка `ayugram-stage5`.
 
+## Артефакт
+
+| Параметр | Значение |
+| --- | --- |
+| Файл | `AyuGram.ipa`, 76 272 592 байт |
+| SHA-256 | `20f127583627ac6b00a9eee5af5b3f7c480462f6aa8d4e6b89e989b618f9ec95` |
+| Commit | `c406b05fbcdb3aa5856dd6eb2c7307fce09af8b0` |
+| Сборка | `ayugram-ci-runner` run `44571722299`, шаги «Build» и «Validate» зелёные |
+| Bundle id | `com.fakekarash.ayugram`, версия 13.0 (build 11) |
+| Платформа | iPhoneOS, ARM64, без расширений, без `UIFileSharingEnabled` |
+| Креденшелы | вшиты реальные `api_id`/`api_hash` (подтверждено наличием хеша в `TelegramUIFramework`) |
+
 ## Оформление
 
 - экран **AyuGram** переделан по образцу: шапка с иконкой, именем и версией,
