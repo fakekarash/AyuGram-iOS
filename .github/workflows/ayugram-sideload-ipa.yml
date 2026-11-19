@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       display_name:
-        description: ASCII CFBundleDisplayName of the packaged app (the Russian name ships as a localisation)
+        description: Optional ASCII CFBundleDisplayName; empty keeps the built-in Russian name
         required: false
-        default: Calculator
+        default: ''
       bundle_id:
         description: Optional bundle id override; empty keeps com.fakekarash.ayugram
         required: false
