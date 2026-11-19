@@ -40,6 +40,8 @@ private enum AyuGramSettingsEntry: ItemListNodeEntry {
     case filters(String, String)
     case linksHeader(String)
     case channel(String)
+    case chats(String)
+    case translation(String)
     case github(String)
     case footer(String)
 
@@ -49,7 +51,7 @@ private enum AyuGramSettingsEntry: ItemListNodeEntry {
             return AyuGramSettingsSection.header.rawValue
         case .categoriesHeader, .ghost, .spy, .filters:
             return AyuGramSettingsSection.categories.rawValue
-        case .linksHeader, .channel, .github:
+        case .linksHeader, .channel, .chats, .translation, .github:
             return AyuGramSettingsSection.links.rawValue
         case .footer:
             return AyuGramSettingsSection.footer.rawValue
@@ -65,8 +67,10 @@ private enum AyuGramSettingsEntry: ItemListNodeEntry {
         case .filters: return 4
         case .linksHeader: return 5
         case .channel: return 6
-        case .github: return 7
-        case .footer: return 8
+        case .chats: return 7
+        case .translation: return 8
+        case .github: return 9
+        case .footer: return 10
         }
     }
 
@@ -104,6 +108,14 @@ private enum AyuGramSettingsEntry: ItemListNodeEntry {
             return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: text, label: "", sectionId: self.section, style: .blocks, action: {
                 arguments.openUrl("https://t.me/neAyuGramipa")
             })
+        case let .chats(text):
+            return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: text, label: "", sectionId: self.section, style: .blocks, action: {
+                arguments.openUrl("https://t.me/ayugramchat")
+            })
+        case let .translation(text):
+            return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: text, label: "", sectionId: self.section, style: .blocks, action: {
+                arguments.openUrl("https://translate.ayugram.one")
+            })
         case let .github(text):
             return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: text, label: "", sectionId: self.section, style: .blocks, action: {
                 arguments.openUrl("https://github.com/fakekarash/AyuGram-iOS")
@@ -124,6 +136,8 @@ private func ayuGramSettingsEntries(strings: AyuGramStrings) -> [AyuGramSettings
         .filters(strings.filters, strings.filtersSubtitle),
         .linksHeader(strings.links),
         .channel(strings.channel),
+        .chats(strings.chats),
+        .translation(strings.translation),
         .github(strings.github),
         .footer(strings.versionFooter + " " + version)
     ]
