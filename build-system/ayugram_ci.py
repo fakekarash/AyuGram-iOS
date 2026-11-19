@@ -13,6 +13,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import urllib.request
 import zipfile
 
@@ -41,17 +42,31 @@ def bazel_path():
 
 def preflight():
     versions = pinned_versions()
-    if platform.system() != "Darwin" or platform.machine() != "arm64":
-        raise RuntimeError("Requires macOS 26 on ARM64 (GitHub runner macos-26)")
-    if output("sw_vers", "-productVersion").split(".")[0] != versions["macos"]:
-        raise RuntimeError("Runner macOS major version does not match versions.json")
+    # Local Macs may run a slightly different macOS/Xcode than the CI pins.
+    # AYUGRAM_ALLOW_UNPINNED=1 downgrades those two checks to warnings while the
+    # Bazel binary checksum is always verified.
+    allow_unpinned = os.environ.get("AYUGRAM_ALLOW_UNPINNED") == "1"
+
+    def check(condition, message):
+        if condition:
+            return
+        if allow_unpinned:
+            print("::warning::" + message)
+        else:
+            raise RuntimeError(message)
+
+    check(platform.system() == "Darwin" and platform.machine() == "arm64", "Requires macOS 26 on ARM64 (GitHub runner macos-26)")
+    check(output("sw_vers", "-productVersion").split(".")[0] == versions["macos"], "Runner macOS major version does not match versions.json")
     developer = Path("/Applications/Xcode_26.6.app/Contents/Developer")
     if not developer.is_dir():
-        raise RuntimeError("Pinned Xcode 26.6 is absent from this runner image")
+        check(False, "Pinned Xcode 26.6 is absent from this runner image")
+        fallback = shutil.which("xcodebuild")
+        if fallback is None:
+            raise RuntimeError("No Xcode toolchain found")
+        developer = Path(output("xcode-select", "-p"))
     subprocess.run(["sudo", "xcode-select", "--switch", str(developer)], check=True)
     xcode = output("xcodebuild", "-version")
-    if xcode.splitlines()[0] != "Xcode 26.6":
-        raise RuntimeError("Selected Xcode does not match versions.json")
+    check(xcode.splitlines()[0] == "Xcode 26.6", "Selected Xcode does not match versions.json")
     print(xcode)
     binary = bazel_path()
     binary.parent.mkdir(exist_ok=True)
@@ -96,9 +111,14 @@ def redacted_run(command, sensitive):
             raise RuntimeError("CI subprocess failed; see redacted output above")
 
 
+def runner_temp() -> str:
+    return os.environ.get("RUNNER_TEMP") or tempfile.gettempdir()
+
+
 def build():
     pinned_versions()
-    if platform.system() != "Darwin" or os.environ.get("GITHUB_ACTIONS") != "true":
+    local_build = os.environ.get("AYUGRAM_LOCAL_BUILD") == "1"
+    if platform.system() != "Darwin" or (os.environ.get("GITHUB_ACTIONS") != "true" and not local_build):
         raise RuntimeError("Build is restricted to the ephemeral macOS Actions runner")
     api_id, api_hash = api_credentials()
     app_specific_url_scheme = os.environ.get("AYUGRAM_APP_SPECIFIC_URL_SCHEME", "tg")
@@ -111,7 +131,7 @@ def build():
     original_keychains = shlex.split(output("security", "list-keychains", "-d", "user"))
     password = secrets.token_hex(24)
     sensitive = (api_id, api_hash, password)
-    with tempfile.TemporaryDirectory(prefix="ayugram-baseline-", dir=os.environ["RUNNER_TEMP"]) as temp:
+    with tempfile.TemporaryDirectory(prefix="ayugram-baseline-", dir=runner_temp()) as temp:
         config = Path(temp) / "configuration.json"
         keychain = str(Path(temp) / "smoke.keychain-db")
         configuration = {
@@ -139,10 +159,10 @@ def build():
                 "-k", password, keychain)
             run(sys.executable, "-u", "build-system/Make/Make.py",
                 "--bazel=" + str(bazel_path()),
-                "--bazelUserRoot=" + str(Path(os.environ["RUNNER_TEMP"]) / "ayugram-bazel"),
+                "--bazelUserRoot=" + str(Path(runner_temp()) / "ayugram-bazel"),
                 "build", "--configurationPath=" + str(config),
                 "--codesigningInformationPath=build-system/fake-codesigning",
-                "--configuration=" + build_configuration, "--buildNumber=" + os.environ["GITHUB_RUN_NUMBER"],
+                "--configuration=" + build_configuration, "--buildNumber=" + (os.environ.get("GITHUB_RUN_NUMBER") or time.strftime("%Y%m%d%H%M")),
                 "--outputBuildArtifactsPath=" + str(ARTIFACTS))
         finally:
             # Make.py generates an ignored Starlark configuration containing API values.
@@ -172,7 +192,7 @@ def verify():
             raise RuntimeError("Unexpected baseline bundle identifier")
         if info.get("CFBundleSupportedPlatforms") != ["iPhoneOS"]:
             raise RuntimeError("Expected an iPhoneOS device build")
-        with tempfile.TemporaryDirectory(dir=os.environ["RUNNER_TEMP"]) as temp:
+        with tempfile.TemporaryDirectory(dir=runner_temp()) as temp:
             binary = Path(temp) / "executable"
             with archive.open(executable) as source, binary.open("wb") as target:
                 shutil.copyfileobj(source, target)
@@ -207,3 +227,4 @@ if __name__ == "__main__":
         # Avoid traceback/exception text that could contain configuration or credentials.
         print("::error::Baseline CI step failed. Check prerequisites and redacted output; no artifact success is claimed.")
         sys.exit(1)
+
