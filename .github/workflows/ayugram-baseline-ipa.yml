@@ -29,7 +29,7 @@ jobs:
         run: python3 build-system/ayugram_ci.py preflight
 
       - name: Verify fake provisioning profiles are not expired
-        run: python3 build-system/extend_fake_profiles.py --check
+        run: python3 build-system/renew_fake_profiles.py --check
 
       - name: Initialize exact submodule revisions
         run: |
@@ -73,4 +73,5 @@ jobs:
         run: |
           printf 'Baseline IPA validated and uploaded: %s\n' "$ARTIFACT_URL" >> "$GITHUB_STEP_SUMMARY"
           printf 'Installation, re-signing and push notifications have NOT been tested.\n' >> "$GITHUB_STEP_SUMMARY"
+
 

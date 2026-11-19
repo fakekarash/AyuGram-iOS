@@ -41,7 +41,7 @@ jobs:
           fi
 
       - name: Verify fake provisioning profiles are not expired
-        run: python3 build-system/extend_fake_profiles.py --check
+        run: python3 build-system/renew_fake_profiles.py --check
 
       - name: Cache Bazel external repositories
         uses: actions/cache@v4
@@ -87,5 +87,6 @@ jobs:
         run: |
           printf 'Sideload IPA validated and uploaded: %s\n' "$ARTIFACT_URL" >> "$GITHUB_STEP_SUMMARY"
           printf 'The IPA still requires signing. Extensions and push notifications are unavailable in this compatibility package.\n' >> "$GITHUB_STEP_SUMMARY"
+
 
 
