@@ -62,8 +62,30 @@ Creating a device IPA with a custom bundle ID in unattended CI additionally
 requires matching certificates and provisioning profiles. Never commit a `.p12`
 file, its password, an Apple session, or an app-specific password to the repo.
 
-## Known distribution limits
+## Fake provisioning profiles
 
+The build signs with the public fake identity in
+`build-system/fake-codesigning/` and never with an Apple account. Those self-signed
+profiles expire, and Bazel runs `openssl smime -verify -noverify` over each one, so
+an expired **or re-edited** profile stops the build with either
+
+- `provisioning profile ExpirationDate ... is in the past`, or
+- `openssl smime ... PKCS7_signatureVerify:digest failure`.
+
+Do not edit the date inside a profile by hand: that keeps the file length but
+invalidates the CMS signature. Re-sign instead:
+
+```bash
+python3 build-system/renew_fake_profiles.py            # re-sign, extend to +10 years
+python3 build-system/renew_fake_profiles.py --check    # verify every profile
+```
+
+The renewal script signs with
+`fake-codesigning/certs/SelfSigned.p12` (empty password) and needs the
+`cryptography` package. `--check` needs only `openssl`, and both workflows run it
+before the build so a broken profile fails in seconds instead of after an hour.
+
+## Known distribution limits
 - A free Apple Personal Team profile expires after seven days and must be
   refreshed. Apple also limits free provisioning to three installed apps per
   device and ten registered App IDs in a seven-day period.
