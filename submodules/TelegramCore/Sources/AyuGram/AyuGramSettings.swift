@@ -196,6 +196,12 @@ public enum AyuGramSettings {
         set { self.setValue(newValue, "savePublicGroups") }
     }
 
+    /// Like the original AyuGram, sponsored messages are not requested at all.
+    public static var disableAds: Bool {
+        get { self.value("disableAds", default: true) }
+        set { self.setValue(newValue, "disableAds") }
+    }
+
     public static var saveDeletedText: Bool {
         get { self.value("saveDeletedText", default: true) }
         set { self.setValue(newValue, "saveDeletedText") }

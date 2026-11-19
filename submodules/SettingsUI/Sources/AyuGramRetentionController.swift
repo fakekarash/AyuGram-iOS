@@ -108,6 +108,7 @@ private func ayuGramRetentionEntries(peers: [EnginePeer.Id: EnginePeer]) -> [Ayu
         .toggle(26, "files", "Файлы", AyuGramSettings.saveDeletedFiles, .content),
         .toggle(27, "stickers", "Стикеры и GIF", AyuGramSettings.saveDeletedStickers, .content),
         .toggle(28, "viewOnce", "Одноразовые фото и видео", AyuGramSettings.preserveViewOnceMedia, .content),
+        .toggle(29, "ads", "Показывать рекламу в чатах", !AyuGramSettings.disableAds, .content),
         .header(40, "ИНДИВИДУАЛЬНЫЕ ПРАВИЛА", .rules),
         .action(41, "addAlways", "Добавить в «Всегда сохранять»", .rules),
         .action(42, "addNever", "Добавить в «Никогда не сохранять»", .rules)
@@ -195,6 +196,7 @@ public func ayuGramRetentionController(context: AccountContext) -> ViewControlle
         case "files": AyuGramSettings.saveDeletedFiles = value
         case "stickers": AyuGramSettings.saveDeletedStickers = value
         case "viewOnce": AyuGramSettings.preserveViewOnceMedia = value
+        case "ads": AyuGramSettings.disableAds = !value
         case "biometric": AyuGramSettings.vaultBiometricLockEnabled = value
         case "noticePrivate": AyuGramSettings.notifyPrivateChats = value
         case "noticeGroups": AyuGramSettings.notifyGroups = value

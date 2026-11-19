@@ -8,6 +8,8 @@ import TelegramCore
 import TelegramPresentationData
 import ItemListUI
 import AccountContext
+import AlertUI
+import PresentationDataUtils
 
 private final class AyuGramSpyControllerArguments {
     let update: (AyuGramSpySetting, Bool) -> Void
@@ -15,14 +17,18 @@ private final class AyuGramSpyControllerArguments {
     let cycleDeletedMark: () -> Void
     let openFilters: () -> Void
     let openVault: () -> Void
+    let clearVault: () -> Void
+    let clearArchive: () -> Void
     let testNotification: () -> Void
 
-    init(update: @escaping (AyuGramSpySetting, Bool) -> Void, cycleOpacity: @escaping () -> Void, cycleDeletedMark: @escaping () -> Void, openFilters: @escaping () -> Void, openVault: @escaping () -> Void, testNotification: @escaping () -> Void) {
+    init(update: @escaping (AyuGramSpySetting, Bool) -> Void, cycleOpacity: @escaping () -> Void, cycleDeletedMark: @escaping () -> Void, openFilters: @escaping () -> Void, openVault: @escaping () -> Void, clearVault: @escaping () -> Void, clearArchive: @escaping () -> Void, testNotification: @escaping () -> Void) {
         self.update = update
         self.cycleOpacity = cycleOpacity
         self.cycleDeletedMark = cycleDeletedMark
         self.openFilters = openFilters
         self.openVault = openVault
+        self.clearVault = clearVault
+        self.clearArchive = clearArchive
         self.testNotification = testNotification
     }
 }
@@ -65,6 +71,8 @@ private enum AyuGramSpyEntry: ItemListNodeEntry {
     case viewOnce(Bool)
     case vault(Bool)
     case openVault(String)
+    case clearVault(String)
+    case clearArchive(String)
     case mediaFooter(String)
     case notificationsHeader(String)
     case localNotifications(Bool)
@@ -76,7 +84,7 @@ private enum AyuGramSpyEntry: ItemListNodeEntry {
         switch self {
         case .antiRecall, .editHistory, .deletedMarker, .deletedMark, .deletionNotices, .systemNotices, .opacity, .filters, .deletionFooter:
             return AyuGramSpySection.deletion.rawValue
-        case .mediaHeader, .restricted, .viewOnce, .vault, .openVault, .mediaFooter:
+        case .mediaHeader, .restricted, .viewOnce, .vault, .openVault, .clearVault, .clearArchive, .mediaFooter:
             return AyuGramSpySection.media.rawValue
         case .notificationsHeader, .localNotifications, .backgroundKeepAlive, .testNotification, .notificationsFooter:
             return AyuGramSpySection.notifications.rawValue
@@ -99,12 +107,14 @@ private enum AyuGramSpyEntry: ItemListNodeEntry {
         case .viewOnce: return 11
         case .vault: return 12
         case .openVault: return 13
-        case .mediaFooter: return 14
-        case .notificationsHeader: return 15
-        case .localNotifications: return 16
-        case .backgroundKeepAlive: return 17
-        case .testNotification: return 18
-        case .notificationsFooter: return 19
+        case .clearVault: return 14
+        case .clearArchive: return 15
+        case .mediaFooter: return 16
+        case .notificationsHeader: return 17
+        case .localNotifications: return 18
+        case .backgroundKeepAlive: return 19
+        case .testNotification: return 20
+        case .notificationsFooter: return 21
         }
     }
 
@@ -145,6 +155,10 @@ private enum AyuGramSpyEntry: ItemListNodeEntry {
             return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: strings.vault, value: value, sectionId: self.section, style: .blocks, updated: { arguments.update(.vault, $0) })
         case let .openVault(count):
             return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: strings.openVault + " (" + count + ")", kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: arguments.openVault)
+        case let .clearVault(text):
+            return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: text, kind: .destructive, alignment: .natural, sectionId: self.section, style: .blocks, action: arguments.clearVault)
+        case let .clearArchive(text):
+            return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: text, kind: .destructive, alignment: .natural, sectionId: self.section, style: .blocks, action: arguments.clearArchive)
         case let .mediaFooter(text):
             return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
         case let .notificationsHeader(text):
@@ -193,6 +207,8 @@ private func ayuGramSpyEntries(strings: AyuGramStrings) -> [AyuGramSpyEntry] {
         .viewOnce(AyuGramSettings.preserveViewOnceMedia),
         .vault(AyuGramSettings.vaultEnabled),
         .openVault("\(storedCount)"),
+        .clearVault(strings.clearVault),
+        .clearArchive(strings.clearArchive),
         .mediaFooter(strings.mediaFooter),
         .notificationsHeader(strings.notificationsHeader),
         .localNotifications(AyuGramSettings.localNotificationsEnabled),
@@ -225,6 +241,23 @@ public func ayuGramSpyController(context: AccountContext) -> ViewController {
     }
 
     let strings = AyuGramStrings(languageCode: context.sharedContext.currentPresentationData.with { $0 }.strings.baseLanguageCode)
+
+    let confirmClear: (String, String, @escaping () -> Void) -> Void = { title, text, action in
+        let alert = textAlertController(
+            context: context,
+            updatedPresentationData: nil,
+            title: title,
+            text: text,
+            actions: [
+                TextAlertAction(type: .destructiveAction, title: strings.clearConfirm, action: {
+                    action()
+                    refresh()
+                }),
+                TextAlertAction(type: .defaultAction, title: context.sharedContext.currentPresentationData.with { $0 }.strings.Common_Cancel, action: {})
+            ]
+        )
+        controllerHolder.controller?.present(alert, in: .window(.root))
+    }
 
     let arguments = AyuGramSpyControllerArguments(update: { setting, value in
         switch setting {
@@ -295,6 +328,14 @@ public func ayuGramSpyController(context: AccountContext) -> ViewController {
                 DispatchQueue.main.async(execute: presentVault)
             }
         }
+    }, clearVault: {
+        confirmClear(strings.clearVault, strings.clearVaultText, {
+            AyuGramVaultStore.removeAll()
+        })
+    }, clearArchive: {
+        confirmClear(strings.clearArchive, strings.clearArchiveText, {
+            AyuGramArchiveStore.removeAll()
+        })
     }, testNotification: {
         ayuGramPostTestNotification()
     })

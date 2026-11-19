@@ -494,6 +494,10 @@ private class AdMessagesHistoryContextImpl {
             guard let inputPeer else {
                 return .single((nil, nil, nil, []))
             }
+            // AyuGram: never request sponsored messages when they are switched off.
+            if AyuGramSettings.disableAds {
+                return .single((nil, nil, nil, []))
+            }
             var flags: Int32 = 0
             if let _ = messageId {
                 flags |= (1 << 0)

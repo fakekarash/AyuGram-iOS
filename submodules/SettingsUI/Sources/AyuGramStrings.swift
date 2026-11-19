@@ -60,6 +60,17 @@ public struct AyuGramStrings {
     public var viewOnce: String { self.localized("Сохранять одноразовые медиа", "Keep view-once media") }
     public var vault: String { self.localized("Локальное хранилище", "Local vault") }
     public var openVault: String { self.localized("Открыть хранилище", "Open vault") }
+    public var clearVault: String { self.localized("Очистить хранилище", "Clear vault") }
+    public var clearArchive: String { self.localized("Очистить архив удалённых", "Clear deleted-message archive") }
+    public var clearConfirm: String { self.localized("Очистить", "Clear") }
+    public var clearVaultText: String {
+        self.localized("Сохранятся только новые файлы. Действие нельзя отменить.",
+                       "Only new files will be kept. This cannot be undone.")
+    }
+    public var clearArchiveText: String {
+        self.localized("Удалённые сообщения, сохранённые ранее, будут потеряны.",
+                       "Previously saved deleted messages will be lost.")
+    }
     public var vaultLock: String { self.localized("Защищать хранилище", "Protect vault") }
     public var mediaFooter: String {
         self.localized("AyuGram сохраняет одноразовые и удалённые вложения в защищённую папку внутри приложения.",
