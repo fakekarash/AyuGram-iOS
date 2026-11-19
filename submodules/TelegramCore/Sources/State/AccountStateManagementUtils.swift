@@ -4610,6 +4610,9 @@ func replayFinalState(
                     }
                     if !unprotectedIds.isEmpty {
                         _internal_deleteMessages(transaction: transaction, mediaBox: mediaBox, ids: unprotectedIds)
+                        // AyuGram: preserved messages are kept, but the ones that were
+                        // really removed must still be reported to the UI state.
+                        deletedMessageIds.append(contentsOf: unprotectedIds.map { .messageId($0) })
                     }
                 } else {
                     var resourceIds: [MediaResourceId] = []
