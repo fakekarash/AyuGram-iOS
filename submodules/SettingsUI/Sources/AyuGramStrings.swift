@@ -71,4 +71,14 @@ public struct AyuGramStrings {
         self.localized("Face ID или Touch ID недоступны. Отключите защиту хранилища в AyuGram.",
                        "Face ID or Touch ID is unavailable. Disable vault protection in AyuGram.")
     }
+
+    public var notificationsHeader: String { self.localized("УВЕДОМЛЕНИЯ", "NOTIFICATIONS") }
+    public var localNotifications: String { self.localized("Локальные уведомления", "Local notifications") }
+    public var backgroundKeepAlive: String { self.localized("Не выгружать из памяти", "Stay awake in background") }
+    public var testNotification: String { self.localized("Проверить уведомление", "Test notification") }
+    public var testNotificationBody: String { self.localized("Уведомления AyuGram работают", "AyuGram notifications are working") }
+    public var notificationsFooter: String {
+        self.localized("Сборка после переподписи не получает push от Telegram, поэтому уведомления создаёт само приложение. С «Не выгружать из памяти» они приходят сразу, но расходуют батарею.",
+                       "A re-signed build receives no Telegram push, so the app creates notifications itself. With background keep-alive they arrive instantly, at the cost of battery.")
+    }
 }

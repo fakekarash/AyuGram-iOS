@@ -14,12 +14,14 @@ private final class AyuGramSpyControllerArguments {
     let cycleOpacity: () -> Void
     let openFilters: () -> Void
     let openVault: () -> Void
+    let testNotification: () -> Void
 
-    init(update: @escaping (AyuGramSpySetting, Bool) -> Void, cycleOpacity: @escaping () -> Void, openFilters: @escaping () -> Void, openVault: @escaping () -> Void) {
+    init(update: @escaping (AyuGramSpySetting, Bool) -> Void, cycleOpacity: @escaping () -> Void, openFilters: @escaping () -> Void, openVault: @escaping () -> Void, testNotification: @escaping () -> Void) {
         self.update = update
         self.cycleOpacity = cycleOpacity
         self.openFilters = openFilters
         self.openVault = openVault
+        self.testNotification = testNotification
     }
 }
 
@@ -36,11 +38,14 @@ private enum AyuGramSpySetting {
     case restricted
     case viewOnce
     case vault
+    case localNotifications
+    case backgroundKeepAlive
 }
 
 private enum AyuGramSpySection: Int32 {
     case deletion
     case media
+    case notifications
 }
 
 private enum AyuGramSpyEntry: ItemListNodeEntry {
@@ -58,6 +63,11 @@ private enum AyuGramSpyEntry: ItemListNodeEntry {
     case vault(Bool)
     case openVault(String)
     case mediaFooter(String)
+    case notificationsHeader(String)
+    case localNotifications(Bool)
+    case backgroundKeepAlive(Bool)
+    case testNotification(String)
+    case notificationsFooter(String)
 
     var section: ItemListSectionId {
         switch self {
@@ -65,6 +75,8 @@ private enum AyuGramSpyEntry: ItemListNodeEntry {
             return AyuGramSpySection.deletion.rawValue
         case .mediaHeader, .restricted, .viewOnce, .vault, .openVault, .mediaFooter:
             return AyuGramSpySection.media.rawValue
+        case .notificationsHeader, .localNotifications, .backgroundKeepAlive, .testNotification, .notificationsFooter:
+            return AyuGramSpySection.notifications.rawValue
         }
     }
 
@@ -84,6 +96,11 @@ private enum AyuGramSpyEntry: ItemListNodeEntry {
         case .vault: return 11
         case .openVault: return 12
         case .mediaFooter: return 13
+        case .notificationsHeader: return 14
+        case .localNotifications: return 15
+        case .backgroundKeepAlive: return 16
+        case .testNotification: return 17
+        case .notificationsFooter: return 18
         }
     }
 
@@ -123,7 +140,32 @@ private enum AyuGramSpyEntry: ItemListNodeEntry {
             return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: strings.openVault + " (" + count + ")", kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: arguments.openVault)
         case let .mediaFooter(text):
             return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
+        case let .notificationsHeader(text):
+            return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
+        case let .localNotifications(value):
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: strings.localNotifications, value: value, sectionId: self.section, style: .blocks, updated: { arguments.update(.localNotifications, $0) })
+        case let .backgroundKeepAlive(value):
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: strings.backgroundKeepAlive, value: value, sectionId: self.section, style: .blocks, updated: { arguments.update(.backgroundKeepAlive, $0) })
+        case let .testNotification(text):
+            return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: arguments.testNotification)
+        case let .notificationsFooter(text):
+            return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
         }
+    }
+}
+
+private func ayuGramPostTestNotification() {
+    let strings = AyuGramStrings(languageCode: Locale.preferredLanguages.first ?? "en")
+    UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
+        guard granted else {
+            return
+        }
+        let content = UNMutableNotificationContent()
+        content.title = "AyuGram"
+        content.body = strings.testNotificationBody
+        content.sound = .default
+        let request = UNNotificationRequest(identifier: "ayugram.test", content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request)
     }
 }
 
@@ -143,7 +185,12 @@ private func ayuGramSpyEntries(strings: AyuGramStrings) -> [AyuGramSpyEntry] {
         .viewOnce(AyuGramSettings.preserveViewOnceMedia),
         .vault(AyuGramSettings.vaultEnabled),
         .openVault("\(storedCount)"),
-        .mediaFooter(strings.mediaFooter)
+        .mediaFooter(strings.mediaFooter),
+        .notificationsHeader(strings.notificationsHeader),
+        .localNotifications(AyuGramSettings.localNotificationsEnabled),
+        .backgroundKeepAlive(AyuGramSettings.backgroundKeepAliveEnabled),
+        .testNotification(strings.testNotification),
+        .notificationsFooter(strings.notificationsFooter)
     ]
 }
 
@@ -192,6 +239,19 @@ public func ayuGramSpyController(context: AccountContext) -> ViewController {
         case .restricted: AyuGramSettings.saveRestrictedContent = value
         case .viewOnce: AyuGramSettings.preserveViewOnceMedia = value
         case .vault: AyuGramSettings.vaultEnabled = value
+        case .localNotifications:
+            AyuGramSettings.localNotificationsEnabled = value
+            if value {
+                UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
+                    if !granted {
+                        AyuGramSettings.localNotificationsEnabled = false
+                        DispatchQueue.main.async {
+                            refresh()
+                        }
+                    }
+                }
+            }
+        case .backgroundKeepAlive: AyuGramSettings.backgroundKeepAliveEnabled = value
         }
         refresh()
     }, cycleOpacity: {
@@ -224,6 +284,8 @@ public func ayuGramSpyController(context: AccountContext) -> ViewController {
                 DispatchQueue.main.async(execute: presentVault)
             }
         }
+    }, testNotification: {
+        ayuGramPostTestNotification()
     })
 
     let signal = combineLatest(queue: .mainQueue(), context.sharedContext.presentationData, revision.get())

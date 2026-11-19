@@ -1099,7 +1099,10 @@ public final class SharedWakeupManager {
         
         self.updateAccounts(hasTasks: hasTasksForBackgroundExtension, endTaskAfterTransactionsComplete: endTaskAfterTransactionsComplete)
         
-        /*if !self.inForeground && pendingMessageCount != 0 && !self.hasActiveAudioSession {
+        // AyuGram: opt-in keep-alive. A re-signed build receives no APNs push, so
+        // the app holds a silent audio session to stay connected and notice new
+        // messages while it is in the background.
+        if AyuGramSettings.backgroundKeepAliveEnabled && !self.inForeground && !self.hasActiveAudioSession {
             if self.silenceAudioRenderer == nil {
                 let audioSession = AVAudioSession()
                 let _ = try? audioSession.setCategory(.ambient)
@@ -1129,7 +1132,7 @@ public final class SharedWakeupManager {
         } else if let silenceAudioRenderer = self.silenceAudioRenderer {
             self.silenceAudioRenderer = nil
             silenceAudioRenderer.stop()
-        }*/
+        }
     }
     
     private func updateAccounts(hasTasks: Bool, endTaskAfterTransactionsComplete: UIBackgroundTaskIdentifier?) {

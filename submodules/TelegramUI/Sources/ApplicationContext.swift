@@ -321,6 +321,18 @@ final class AuthorizedApplicationContext {
             }
 
             if let strongSelf = self, let (messages, _, notify, threadData) = messageList.last, let firstMessage = messages.first {
+                if UIApplication.shared.applicationState != .active {
+                    // A re-signed build has no APNs topic of its own, so the app
+                    // shows its own notification for messages it has just received.
+                    if notify {
+                        let chatTitle = firstMessage.peers[firstMessage.id.peerId]?.debugDisplayTitle ?? ""
+                        let isMuted = firstMessage.attributes.contains(where: { attribute -> Bool in
+                            return (attribute as? NotificationInfoMessageAttribute)?.flags.contains(.muted) ?? false
+                        })
+                        AyuGramLocalNotifications.post(message: firstMessage, chatTitle: chatTitle, isMuted: isMuted)
+                    }
+                    return
+                }
                 if UIApplication.shared.applicationState == .active {
                     let chatLocation: NavigateToChatControllerParams.Location
                     if let _ = threadData, let threadId = firstMessage.threadId {

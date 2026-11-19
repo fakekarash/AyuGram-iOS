@@ -1637,9 +1637,11 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
             })
         }
         
+        AyuGramLocalNotifications.registerBackgroundRefresh()
+        AyuGramLocalNotifications.scheduleBackgroundRefresh()
+        
         let timestamp = Int(CFAbsoluteTimeGetCurrent())
-        let minReindexTimestamp = timestamp - 2 * 24 * 60 * 60
-        if let indexTimestamp = UserDefaults.standard.object(forKey: "TelegramCacheIndexTimestamp_v2") as? NSNumber, indexTimestamp.intValue >= minReindexTimestamp {
+        let minReindexTimestamp = timestamp - 2 * 24 * 60 * 60        if let indexTimestamp = UserDefaults.standard.object(forKey: "TelegramCacheIndexTimestamp_v2") as? NSNumber, indexTimestamp.intValue >= minReindexTimestamp {
         } else {
             UserDefaults.standard.set(timestamp as NSNumber, forKey: "TelegramCacheIndexTimestamp_v2")
             
