@@ -237,7 +237,9 @@ public final class AppLockContextImpl: AppLockContext {
                     }
                     
                     if let passcodeController = strongSelf.passcodeController {
-                        if becameActiveRecently, !strongSelf.suppressAutomaticBiometrics, case .enabled = biometrics, isApplicationActive {
+                        // AyuGram: never ask for biometrics while the calculator disguise is on
+                        // screen — a face prompt would give the app away.
+                        if becameActiveRecently, !strongSelf.suppressAutomaticBiometrics, case .enabled = biometrics, isApplicationActive, !AyuGramCalculatorGateState.shared.isLocked {
                             passcodeController.requestBiometrics()
                         }
                         passcodeController.ensureInputFocused()
@@ -249,9 +251,9 @@ public final class AppLockContextImpl: AppLockContext {
                                 return CGRect()
                             }
                         }))
-                        if becameActiveRecently, !strongSelf.suppressAutomaticBiometrics, isApplicationActive {
+                        if becameActiveRecently, !strongSelf.suppressAutomaticBiometrics, isApplicationActive, !AyuGramCalculatorGateState.shared.isLocked {
                             passcodeController.presentationCompleted = { [weak self, weak passcodeController] in
-                                if case .enabled = biometrics, self?.suppressAutomaticBiometrics == false {
+                                if case .enabled = biometrics, self?.suppressAutomaticBiometrics == false, !AyuGramCalculatorGateState.shared.isLocked {
                                     passcodeController?.requestBiometrics()
                                 }
                                 passcodeController?.ensureInputFocused()

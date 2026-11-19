@@ -79,6 +79,10 @@ public enum AyuGramLocalNotifications {
 
     /// Called for incoming messages while the app is not in the foreground.
     public static func post(message: Message, chatTitle: String, isMuted: Bool) {
+        // The disguise must not leak chat titles or message text on the lock screen.
+        if AyuGramSettings.calculatorHideNotifications, AyuGramCalculatorGateState.shared.isLocked {
+            return
+        }
         guard AyuGramSettings.localNotificationsEnabled, !isMuted else {
             return
         }

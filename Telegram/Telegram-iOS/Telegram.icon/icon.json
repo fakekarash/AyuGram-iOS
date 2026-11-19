@@ -11,8 +11,8 @@
             { "appearance" : "dark", "value" : "normal" }
           ],
           "glass" : false,
-          "image-name" : "AyuGram.png",
-          "name" : "AyuGram"
+          "image-name" : "Calculator.png",
+          "name" : "Calculator"
         }
       ],
       "lighting" : "combined",

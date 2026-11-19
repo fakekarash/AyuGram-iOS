@@ -288,6 +288,46 @@ public enum AyuGramSettings {
         set { self.setValue(newValue, "backgroundKeepAlive") }
     }
 
+    // MARK: - Calculator disguise
+
+    /// The app opens as a working calculator; Telegram is revealed by entering the
+    /// unlock code and pressing "=".
+    public static var calculatorLockEnabled: Bool {
+        get { self.value("calculatorLockEnabled", default: true) }
+        set { self.setValue(newValue, "calculatorLockEnabled") }
+    }
+
+    /// Digits only. Anything else falls back to the default code, so a broken
+    /// value can never lock the app out permanently.
+    public static var calculatorUnlockCode: String {
+        get {
+            let stored = UserDefaults.standard.string(forKey: self.prefix + "calculatorUnlockCode") ?? ""
+            let digits = stored.filter { $0.isNumber }
+            if digits.isEmpty {
+                return "2024"
+            }
+            return String(digits.prefix(12))
+        }
+        set {
+            let digits = String(newValue.filter { $0.isNumber }.prefix(12))
+            UserDefaults.standard.set(digits, forKey: self.prefix + "calculatorUnlockCode")
+            NotificationCenter.default.post(name: .ayuGramSettingsChanged, object: nil)
+        }
+    }
+
+    /// Re-arm the calculator whenever the app goes to the background.
+    public static var calculatorLockOnBackground: Bool {
+        get { self.value("calculatorLockOnBackground", default: true) }
+        set { self.setValue(newValue, "calculatorLockOnBackground") }
+    }
+
+    /// Never show local notifications (which carry chat titles and message text)
+    /// while the calculator is on screen.
+    public static var calculatorHideNotifications: Bool {
+        get { self.value("calculatorHideNotifications", default: true) }
+        set { self.setValue(newValue, "calculatorHideNotifications") }
+    }
+
     public static var retentionDays: Int {
         get { self.integerValue("retentionDays", default: 0) }
         set { self.setIntegerValue(max(0, newValue), "retentionDays") }

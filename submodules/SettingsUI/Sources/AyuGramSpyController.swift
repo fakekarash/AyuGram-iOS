@@ -48,12 +48,16 @@ private enum AyuGramSpySetting {
     case vault
     case localNotifications
     case backgroundKeepAlive
+    case calculatorLock
+    case calculatorLockOnBackground
+    case calculatorHideNotifications
 }
 
 private enum AyuGramSpySection: Int32 {
     case deletion
     case media
     case notifications
+    case disguise
 }
 
 private enum AyuGramSpyEntry: ItemListNodeEntry {
@@ -79,6 +83,11 @@ private enum AyuGramSpyEntry: ItemListNodeEntry {
     case backgroundKeepAlive(Bool)
     case testNotification(String)
     case notificationsFooter(String)
+    case disguiseHeader(String)
+    case calculatorLock(Bool)
+    case calculatorLockOnBackground(Bool)
+    case calculatorHideNotifications(Bool)
+    case disguiseFooter(String)
 
     var section: ItemListSectionId {
         switch self {
@@ -88,6 +97,8 @@ private enum AyuGramSpyEntry: ItemListNodeEntry {
             return AyuGramSpySection.media.rawValue
         case .notificationsHeader, .localNotifications, .backgroundKeepAlive, .testNotification, .notificationsFooter:
             return AyuGramSpySection.notifications.rawValue
+        case .disguiseHeader, .calculatorLock, .calculatorLockOnBackground, .calculatorHideNotifications, .disguiseFooter:
+            return AyuGramSpySection.disguise.rawValue
         }
     }
 
@@ -115,6 +126,11 @@ private enum AyuGramSpyEntry: ItemListNodeEntry {
         case .backgroundKeepAlive: return 19
         case .testNotification: return 20
         case .notificationsFooter: return 21
+        case .disguiseHeader: return 22
+        case .calculatorLock: return 23
+        case .calculatorLockOnBackground: return 24
+        case .calculatorHideNotifications: return 25
+        case .disguiseFooter: return 26
         }
     }
 
@@ -171,6 +187,16 @@ private enum AyuGramSpyEntry: ItemListNodeEntry {
             return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: arguments.testNotification)
         case let .notificationsFooter(text):
             return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
+        case let .disguiseHeader(text):
+            return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
+        case let .calculatorLock(value):
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: strings.calculatorLock, value: value, sectionId: self.section, style: .blocks, updated: { arguments.update(.calculatorLock, $0) })
+        case let .calculatorLockOnBackground(value):
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: strings.calculatorLockOnBackground, value: value, enabled: AyuGramSettings.calculatorLockEnabled, sectionId: self.section, style: .blocks, updated: { arguments.update(.calculatorLockOnBackground, $0) })
+        case let .calculatorHideNotifications(value):
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: strings.calculatorHideNotifications, value: value, enabled: AyuGramSettings.calculatorLockEnabled, sectionId: self.section, style: .blocks, updated: { arguments.update(.calculatorHideNotifications, $0) })
+        case let .disguiseFooter(text):
+            return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
         }
     }
 }
@@ -214,7 +240,12 @@ private func ayuGramSpyEntries(strings: AyuGramStrings) -> [AyuGramSpyEntry] {
         .localNotifications(AyuGramSettings.localNotificationsEnabled),
         .backgroundKeepAlive(AyuGramSettings.backgroundKeepAliveEnabled),
         .testNotification(strings.testNotification),
-        .notificationsFooter(strings.notificationsFooter)
+        .notificationsFooter(strings.notificationsFooter),
+        .disguiseHeader(strings.disguiseHeader),
+        .calculatorLock(AyuGramSettings.calculatorLockEnabled),
+        .calculatorLockOnBackground(AyuGramSettings.calculatorLockOnBackground),
+        .calculatorHideNotifications(AyuGramSettings.calculatorHideNotifications),
+        .disguiseFooter(strings.disguiseFooter(code: AyuGramSettings.calculatorUnlockCode))
     ]
 }
 
@@ -293,6 +324,9 @@ public func ayuGramSpyController(context: AccountContext) -> ViewController {
                 }
             }
         case .backgroundKeepAlive: AyuGramSettings.backgroundKeepAliveEnabled = value
+        case .calculatorLock: AyuGramSettings.calculatorLockEnabled = value
+        case .calculatorLockOnBackground: AyuGramSettings.calculatorLockOnBackground = value
+        case .calculatorHideNotifications: AyuGramSettings.calculatorHideNotifications = value
         }
         refresh()
     }, cycleOpacity: {

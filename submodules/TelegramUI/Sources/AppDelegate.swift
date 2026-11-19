@@ -1787,6 +1787,10 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
         self.mainWindow?.updateDeviceMetrics()
         self.window?.makeKeyAndVisible()
 
+        // AyuGram: the disguise covers everything from the first frame; the real
+        // UI is created asynchronously afterwards, underneath the calculator.
+        AyuGramCalculatorGate.shared.installIfNeeded(window: self.mainWindow)
+
         for context in connectionOptions.urlContexts {
             let url = context.url
             if let buildConfig = self.buildConfig, url.scheme == "tg" || url.scheme == "ton" || url.scheme == buildConfig.appSpecificUrlScheme || WalletContext.isTonConnectUrl(url.absoluteString) {
@@ -2013,6 +2017,12 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
         self.isActiveValue = false
         self.isActivePromise.set(false)
         self.clearNotificationsManager?.commitNow()
+
+        // AyuGram: re-arm the calculator before iOS takes the app switcher
+        // snapshot, so the snapshot shows the calculator, not the chat list.
+        if AyuGramSettings.calculatorLockEnabled, AyuGramSettings.calculatorLockOnBackground, let mainWindow = self.mainWindow {
+            AyuGramCalculatorGate.shared.lockNow(window: mainWindow)
+        }
         
         if let navigationController = self.mainWindow.viewController as? NavigationController {
             for controller in navigationController.viewControllers {
@@ -2097,6 +2107,11 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
         }
         
         self.runForegroundTasks()
+        
+        // AyuGram: if the disguise is still armed, make sure it is on screen.
+        if let mainWindow = self.mainWindow {
+            AyuGramCalculatorGate.shared.installIfNeeded(window: mainWindow)
+        }
         
         SharedDisplayLinkDriver.shared.updateForegroundState(self.isActiveValue)
     }

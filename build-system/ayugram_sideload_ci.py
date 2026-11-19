@@ -17,7 +17,14 @@ import ayugram_ci as baseline
 
 ROOT = Path(__file__).resolve().parent.parent
 ARTIFACTS = ROOT / "build" / "ayugram-sideload"
-CUSTOM_BUNDLE_ID = "com.fakekarash.ayugram"
+DEFAULT_BUNDLE_ID = "com.fakekarash.ayugram"
+DEFAULT_DISPLAY_NAME = "Калькулятор"
+CUSTOM_BUNDLE_ID = os.environ.get("AYUGRAM_BUNDLE_ID") or DEFAULT_BUNDLE_ID
+DISPLAY_NAME = os.environ.get("AYUGRAM_DISPLAY_NAME") or DEFAULT_DISPLAY_NAME
+if not re.fullmatch(r"[A-Za-z0-9.-]+", CUSTOM_BUNDLE_ID):
+    raise RuntimeError("AYUGRAM_BUNDLE_ID must be a plain reverse-DNS identifier")
+if not DISPLAY_NAME.strip() or len(DISPLAY_NAME) > 32:
+    raise RuntimeError("AYUGRAM_DISPLAY_NAME must be a short non-empty name")
 PATCHES = (
     (ROOT / "submodules" / "TelegramUI", ROOT / "build-system" / "patches" / "sideload-telegramui.patch"),
     (ROOT / "submodules" / "PasscodeCore", ROOT / "build-system" / "patches" / "sideload-passcodecore.patch"),
@@ -124,8 +131,8 @@ def repackage():
                 if name == main_plist:
                     plist = replace_bundle_strings(plistlib.loads(data))
                     plist["CFBundleIdentifier"] = CUSTOM_BUNDLE_ID
-                    plist["CFBundleDisplayName"] = "AyuGram"
-                    plist["CFBundleName"] = "AyuGram"
+                    plist["CFBundleDisplayName"] = DISPLAY_NAME
+                    plist["CFBundleName"] = DISPLAY_NAME
                     # The vault and the deleted-message archive live in Documents, so
                     # the Documents folder must NOT be shared with the Files app or
                     # Finder. Export is done with the in-app share sheet instead.
@@ -175,7 +182,7 @@ def verify():
         info = plistlib.loads(archive.read(app_plists[0]))
         if info.get("CFBundleIdentifier") != CUSTOM_BUNDLE_ID:
             raise RuntimeError("Unexpected sideload bundle identifier")
-        if info.get("CFBundleDisplayName") != "AyuGram":
+        if info.get("CFBundleDisplayName") != DISPLAY_NAME:
             raise RuntimeError("Unexpected sideload application name")
         if info.get("CFBundleSupportedPlatforms") != ["iPhoneOS"]:
             raise RuntimeError("Expected an iPhoneOS device build")
@@ -210,7 +217,7 @@ def verify():
         "xcode_actual": output("xcodebuild", "-version"),
         "runner_image": os.environ.get("ImageVersion"),
         "bundle_id": CUSTOM_BUNDLE_ID,
-        "display_name": "AyuGram",
+        "display_name": DISPLAY_NAME,
         "patches": patch_hashes,
         "ipa_sha256": hashlib.sha256(ipa.read_bytes()).hexdigest(),
         "ipa_bytes": ipa.stat().st_size,

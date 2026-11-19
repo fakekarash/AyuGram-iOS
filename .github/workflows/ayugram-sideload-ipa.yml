@@ -1,7 +1,16 @@
-﻿name: AyuGram iOS sideload IPA (manual)
+name: AyuGram iOS sideload IPA (manual)
 
 on:
   workflow_dispatch:
+    inputs:
+      display_name:
+        description: CFBundleDisplayName of the packaged app
+        required: false
+        default: Калькулятор
+      bundle_id:
+        description: Optional bundle id override; empty keeps com.fakekarash.ayugram
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -62,6 +71,9 @@ jobs:
 
       - name: Build sideload-compatible client
         env:
+          AYUGRAM_KEEP_GOING: "1"
+          AYUGRAM_DISPLAY_NAME: ${{ inputs.display_name }}
+          AYUGRAM_BUNDLE_ID: ${{ inputs.bundle_id }}
           TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
           TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
         run: python3 -u build-system/ayugram_sideload_ci.py build
