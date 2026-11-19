@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import UIKit
 import UserNotifications
 import BackgroundTasks
@@ -70,7 +70,7 @@ public enum AyuGramLocalNotifications {
             }
             let content = UNMutableNotificationContent()
             content.title = "AyuGram"
-            content.body = AyuGramLocalNotifications.localized("РЈРІРµРґРѕРјР»РµРЅРёСЏ СЂР°Р±РѕС‚Р°СЋС‚", "Notifications are working")
+            content.body = AyuGramLocalNotifications.localized("Уведомления работают", "Notifications are working")
             content.sound = .default
             let request = UNNotificationRequest(identifier: "ayugram.test", content: content, trigger: nil)
             UNUserNotificationCenter.current().add(request)
@@ -89,7 +89,7 @@ public enum AyuGramLocalNotifications {
         let content = UNMutableNotificationContent()
         if AyuGramSettings.hideNotificationContent {
             content.title = "AyuGram"
-            content.body = AyuGramLocalNotifications.localized("РќРѕРІРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ", "New message")
+            content.body = AyuGramLocalNotifications.localized("Новое сообщение", "New message")
         } else {
             let authorTitle = message.author?.debugDisplayTitle ?? ""
             content.title = chatTitle.isEmpty ? "AyuGram" : chatTitle
@@ -97,9 +97,9 @@ public enum AyuGramLocalNotifications {
             if !message.text.isEmpty {
                 preview = String(message.text.prefix(240))
             } else if !message.media.isEmpty {
-                preview = AyuGramLocalNotifications.localized("[РјРµРґРёР°]", "[media]")
+                preview = AyuGramLocalNotifications.localized("[медиа]", "[media]")
             } else {
-                preview = AyuGramLocalNotifications.localized("РќРѕРІРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ", "New message")
+                preview = AyuGramLocalNotifications.localized("Новое сообщение", "New message")
             }
             if !authorTitle.isEmpty, authorTitle != chatTitle {
                 content.body = authorTitle + ": " + preview
@@ -119,4 +119,3 @@ public enum AyuGramLocalNotifications {
         UNUserNotificationCenter.current().add(request)
     }
 }
-

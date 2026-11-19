@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import Display
 import SwiftSignalKit
 import TelegramCore
@@ -81,7 +81,7 @@ private enum AyuGramRetentionEntry: ItemListNodeEntry {
                 }
             })
         case let .peer(_, peer, rule):
-            let prefix = rule == .always ? "Р’СЃРµРіРґР°" : "РќРёРєРѕРіРґР°"
+            let prefix = rule == .always ? "Всегда" : "Никогда"
             return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: "\(prefix): \(peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder))", kind: rule == .never ? .destructive : .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: { arguments.cycleRule(peer.id) })
         case let .info(_, text, _):
             return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
@@ -91,26 +91,26 @@ private enum AyuGramRetentionEntry: ItemListNodeEntry {
 
 private func ayuGramRetentionEntries(peers: [EnginePeer.Id: EnginePeer]) -> [AyuGramRetentionEntry] {
     var entries: [AyuGramRetentionEntry] = [
-        .header(0, "РРЎРўРћР§РќРРљР", .sources),
-        .toggle(1, "private", "Р›РёС‡РЅС‹Рµ С‡Р°С‚С‹", AyuGramSettings.savePrivateChats, .sources),
-        .toggle(2, "groups", "Р“СЂСѓРїРїС‹ Рё СЃСѓРїРµСЂРіСЂСѓРїРїС‹", AyuGramSettings.saveGroups, .sources),
-        .toggle(3, "channels", "РљР°РЅР°Р»С‹", AyuGramSettings.saveChannels, .sources),
-        .toggle(4, "bots", "Р‘РѕС‚С‹", AyuGramSettings.saveBots, .sources),
+        .header(0, "ИСТОЧНИКИ", .sources),
+        .toggle(1, "private", "Личные чаты", AyuGramSettings.savePrivateChats, .sources),
+        .toggle(2, "groups", "Группы и супергруппы", AyuGramSettings.saveGroups, .sources),
+        .toggle(3, "channels", "Каналы", AyuGramSettings.saveChannels, .sources),
+        .toggle(4, "bots", "Боты", AyuGramSettings.saveBots, .sources),
         .toggle(6, "publicChannels", "…в открытых каналах", AyuGramSettings.savePublicChannels, .sources),
         .toggle(7, "publicGroups", "…в открытых группах", AyuGramSettings.savePublicGroups, .sources),
-        .info(5, "Р•СЃР»Рё РІСЃРµ РєР°С‚РµРіРѕСЂРёРё РІС‹РєР»СЋС‡РµРЅС‹, СЃРѕС…СЂР°РЅСЏС‚СЊСЃСЏ Р±СѓРґСѓС‚ С‚РѕР»СЊРєРѕ С‡Р°С‚С‹ РёР· СЃРїРёСЃРєР° В«Р’СЃРµРіРґР°В». РРЅРґРёРІРёРґСѓР°Р»СЊРЅС‹Рµ РїСЂР°РІРёР»Р° РёРјРµСЋС‚ РїСЂРёРѕСЂРёС‚РµС‚.", .sources),
-        .header(20, "Р§РўРћ РЎРћРҐР РђРќРЇРўР¬", .content),
-        .toggle(21, "text", "РЈРґР°Р»С‘РЅРЅС‹Р№ С‚РµРєСЃС‚", AyuGramSettings.saveDeletedText, .content),
-        .toggle(22, "edits", "РСЃС‚РѕСЂРёСЏ РёР·РјРµРЅРµРЅРёР№", AyuGramSettings.editHistoryEnabled, .content),
-        .toggle(23, "photos", "Р¤РѕС‚РѕРіСЂР°С„РёРё", AyuGramSettings.saveDeletedPhotos, .content),
-        .toggle(24, "videos", "Р’РёРґРµРѕ Рё РІРёРґРµРѕСЃРѕРѕР±С‰РµРЅРёСЏ", AyuGramSettings.saveDeletedVideos, .content),
-        .toggle(25, "voice", "Р“РѕР»РѕСЃРѕРІС‹Рµ СЃРѕРѕР±С‰РµРЅРёСЏ", AyuGramSettings.saveDeletedVoice, .content),
-        .toggle(26, "files", "Р¤Р°Р№Р»С‹", AyuGramSettings.saveDeletedFiles, .content),
-        .toggle(27, "stickers", "РЎС‚РёРєРµСЂС‹ Рё GIF", AyuGramSettings.saveDeletedStickers, .content),
-        .toggle(28, "viewOnce", "РћРґРЅРѕСЂР°Р·РѕРІС‹Рµ С„РѕС‚Рѕ Рё РІРёРґРµРѕ", AyuGramSettings.preserveViewOnceMedia, .content),
-        .header(40, "РРќР”РР’РР”РЈРђР›Р¬РќР«Р• РџР РђР’РР›Рђ", .rules),
-        .action(41, "addAlways", "Р”РѕР±Р°РІРёС‚СЊ РІ В«Р’СЃРµРіРґР° СЃРѕС…СЂР°РЅСЏС‚СЊВ»", .rules),
-        .action(42, "addNever", "Р”РѕР±Р°РІРёС‚СЊ РІ В«РќРёРєРѕРіРґР° РЅРµ СЃРѕС…СЂР°РЅСЏС‚СЊВ»", .rules)
+        .info(5, "Если все категории выключены, сохраняться будут только чаты из списка «Всегда». Индивидуальные правила имеют приоритет.", .sources),
+        .header(20, "ЧТО СОХРАНЯТЬ", .content),
+        .toggle(21, "text", "Удалённый текст", AyuGramSettings.saveDeletedText, .content),
+        .toggle(22, "edits", "История изменений", AyuGramSettings.editHistoryEnabled, .content),
+        .toggle(23, "photos", "Фотографии", AyuGramSettings.saveDeletedPhotos, .content),
+        .toggle(24, "videos", "Видео и видеосообщения", AyuGramSettings.saveDeletedVideos, .content),
+        .toggle(25, "voice", "Голосовые сообщения", AyuGramSettings.saveDeletedVoice, .content),
+        .toggle(26, "files", "Файлы", AyuGramSettings.saveDeletedFiles, .content),
+        .toggle(27, "stickers", "Стикеры и GIF", AyuGramSettings.saveDeletedStickers, .content),
+        .toggle(28, "viewOnce", "Одноразовые фото и видео", AyuGramSettings.preserveViewOnceMedia, .content),
+        .header(40, "ИНДИВИДУАЛЬНЫЕ ПРАВИЛА", .rules),
+        .action(41, "addAlways", "Добавить в «Всегда сохранять»", .rules),
+        .action(42, "addNever", "Добавить в «Никогда не сохранять»", .rules)
     ]
 
     let alwaysIds = AyuGramSettings.peerIds(rule: .always)
@@ -128,23 +128,23 @@ private func ayuGramRetentionEntries(peers: [EnginePeer.Id: EnginePeer]) -> [Ayu
             index += 1
         }
     }
-    entries.append(.info(900, "РќР°Р¶Р°С‚РёРµ РЅР° РґРѕР±Р°РІР»РµРЅРЅС‹Р№ С‡Р°С‚ РїРµСЂРµРєР»СЋС‡Р°РµС‚: РІСЃРµРіРґР° в†’ РЅРёРєРѕРіРґР° в†’ РѕР±С‰РёРµ РЅР°СЃС‚СЂРѕР№РєРё.", .rules))
+    entries.append(.info(900, "Нажатие на добавленный чат переключает: всегда → никогда → общие настройки.", .rules))
 
-    let retentionText = AyuGramSettings.retentionDays == 0 ? "Р‘РµР· РѕРіСЂР°РЅРёС‡РµРЅРёСЏ" : "\(AyuGramSettings.retentionDays) РґРЅРµР№"
-    let limitText = AyuGramSettings.vaultLimitMB == 0 ? "Р‘РµР· РѕРіСЂР°РЅРёС‡РµРЅРёСЏ" : "\(AyuGramSettings.vaultLimitMB) РњР‘"
+    let retentionText = AyuGramSettings.retentionDays == 0 ? "Без ограничения" : "\(AyuGramSettings.retentionDays) дней"
+    let limitText = AyuGramSettings.vaultLimitMB == 0 ? "Без ограничения" : "\(AyuGramSettings.vaultLimitMB) МБ"
     entries.append(contentsOf: [
-        .header(1000, "РҐР РђРќРР›РР©Р•", .storage),
-        .action(1001, "retention", "РЎСЂРѕРє С…СЂР°РЅРµРЅРёСЏ: \(retentionText)", .storage),
-        .action(1002, "limit", "Р›РёРјРёС‚ РјРµРґРёР°: \(limitText)", .storage),
-        .toggle(1003, "biometric", "Р—Р°С‰РёС‰Р°С‚СЊ С…СЂР°РЅРёР»РёС‰Рµ Face ID", AyuGramSettings.vaultBiometricLockEnabled, .storage),
-        .info(1004, "Р›РёРјРёС‚ СѓРґР°Р»СЏРµС‚ СЃР°РјС‹Рµ СЃС‚Р°СЂС‹Рµ СЃРѕС…СЂР°РЅС‘РЅРЅС‹Рµ С„Р°Р№Р»С‹. РўРµРєСЃС‚РѕРІС‹Р№ Р°СЂС…РёРІ РѕС‡РёС‰Р°РµС‚СЃСЏ РїРѕ СЃСЂРѕРєСѓ С…СЂР°РЅРµРЅРёСЏ.", .storage),
-        .header(1100, "РЈР’Р•Р”РћРњР›Р•РќРРЇ РћР‘ РЈР”РђР›Р•РќРР", .notifications),
-        .toggle(1101, "noticePrivate", "Р›РёС‡РЅС‹Рµ С‡Р°С‚С‹", AyuGramSettings.notifyPrivateChats, .notifications),
-        .toggle(1102, "noticeGroups", "Р“СЂСѓРїРїС‹", AyuGramSettings.notifyGroups, .notifications),
-        .toggle(1103, "noticeChannels", "РљР°РЅР°Р»С‹", AyuGramSettings.notifyChannels, .notifications),
-        .toggle(1104, "noticeBots", "Р‘РѕС‚С‹", AyuGramSettings.notifyBots, .notifications),
-        .toggle(1105, "hideNotice", "РЎРєСЂС‹РІР°С‚СЊ С‚РµРєСЃС‚ СѓРІРµРґРѕРјР»РµРЅРёСЏ", AyuGramSettings.hideNotificationContent, .notifications),
-        .info(1106, "РЎРёСЃС‚РµРјРЅРѕРµ СѓРІРµРґРѕРјР»РµРЅРёРµ РІРѕР·РјРѕР¶РЅРѕ, РїРѕРєР° iOS РїРѕР·РІРѕР»СЏРµС‚ sideload-РїСЂРёР»РѕР¶РµРЅРёСЋ СЂР°Р±РѕС‚Р°С‚СЊ РІ С„РѕРЅРµ. РџРѕСЃР»Рµ РїСЂРёРЅСѓРґРёС‚РµР»СЊРЅРѕРіРѕ Р·Р°РєСЂС‹С‚РёСЏ РѕР±РЅРѕРІР»РµРЅРёРµ РїСЂРёРґС‘С‚ РїСЂРё СЃР»РµРґСѓСЋС‰РµРј Р·Р°РїСѓСЃРєРµ.", .notifications)
+        .header(1000, "ХРАНИЛИЩЕ", .storage),
+        .action(1001, "retention", "Срок хранения: \(retentionText)", .storage),
+        .action(1002, "limit", "Лимит медиа: \(limitText)", .storage),
+        .toggle(1003, "biometric", "Защищать хранилище Face ID", AyuGramSettings.vaultBiometricLockEnabled, .storage),
+        .info(1004, "Лимит удаляет самые старые сохранённые файлы. Текстовый архив очищается по сроку хранения.", .storage),
+        .header(1100, "УВЕДОМЛЕНИЯ ОБ УДАЛЕНИИ", .notifications),
+        .toggle(1101, "noticePrivate", "Личные чаты", AyuGramSettings.notifyPrivateChats, .notifications),
+        .toggle(1102, "noticeGroups", "Группы", AyuGramSettings.notifyGroups, .notifications),
+        .toggle(1103, "noticeChannels", "Каналы", AyuGramSettings.notifyChannels, .notifications),
+        .toggle(1104, "noticeBots", "Боты", AyuGramSettings.notifyBots, .notifications),
+        .toggle(1105, "hideNotice", "Скрывать текст уведомления", AyuGramSettings.hideNotificationContent, .notifications),
+        .info(1106, "Системное уведомление возможно, пока iOS позволяет sideload-приложению работать в фоне. После принудительного закрытия обновление придёт при следующем запуске.", .notifications)
     ])
     return entries
 }
@@ -206,7 +206,7 @@ public func ayuGramRetentionController(context: AccountContext) -> ViewControlle
         revision.set(revisionValue.modify { $0 + 1 })
     }, addRule: { rule in
         let filter: ChatListNodePeersFilter = [.excludeRecent, .doNotSearchMessages, .removeSearchHeader, .excludeSecretChats]
-        let title = rule == .always ? "Р’СЃРµРіРґР° СЃРѕС…СЂР°РЅСЏС‚СЊ" : "РќРёРєРѕРіРґР° РЅРµ СЃРѕС…СЂР°РЅСЏС‚СЊ"
+        let title = rule == .always ? "Всегда сохранять" : "Никогда не сохранять"
         let controller = context.sharedContext.makePeerSelectionController(PeerSelectionControllerParams(context: context, filter: filter, hasContactSelector: false, title: title))
         controller.peerSelected = { [weak controller] peer, _ in
             AyuGramSettings.setPeerRule(rule, peerId: peer.id)
@@ -246,7 +246,7 @@ public func ayuGramRetentionController(context: AccountContext) -> ViewControlle
     |> map { presentationData, _, peers -> (ItemListControllerState, (ItemListNodeState, Any)) in
         let itemPresentationData = ItemListPresentationData(presentationData)
         return (
-            ItemListControllerState(presentationData: itemPresentationData, title: .text("РџСЂР°РІРёР»Р° AyuGram"), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back)),
+            ItemListControllerState(presentationData: itemPresentationData, title: .text("Правила AyuGram"), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back)),
             (ItemListNodeState(presentationData: itemPresentationData, entries: ayuGramRetentionEntries(peers: peers), style: .blocks, animateChanges: true), arguments)
         )
     }
@@ -256,4 +256,3 @@ public func ayuGramRetentionController(context: AccountContext) -> ViewControlle
     refresh()
     return controller
 }
-
