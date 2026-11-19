@@ -1553,11 +1553,11 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
             |> deliverOnMainQueue).start(next: { items in
                 // AyuGram: a locked disguise must not advertise chat shortcuts on the
                 // app icon, since long-pressing it would give the app away.
-                let items = (AyuGramSettings.calculatorLockEnabled && AyuGramCalculatorGateState.shared.isLocked) ? [] : items
-                if items.isEmpty {
+                let visibleItems = (AyuGramSettings.calculatorLockEnabled && AyuGramCalculatorGateState.shared.isLocked) ? [] : items
+                if visibleItems.isEmpty {
                     UIApplication.shared.shortcutItems = nil
                 } else {
-                    UIApplication.shared.shortcutItems = items.map({ $0.shortcutItem() })
+                    UIApplication.shared.shortcutItems = visibleItems.map({ $0.shortcutItem() })
                 }
             }))
         }

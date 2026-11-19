@@ -159,7 +159,8 @@ public final class AyuGramCalculatorEngine {
             return
         }
 
-        let result = AyuGramCalculatorEngine.apply(operation, left: self.accumulator ?? 0.0, right: operand)
+        // A repeated "=" has no accumulator left: it works on the displayed result.
+        let result = AyuGramCalculatorEngine.apply(operation, left: self.accumulator ?? (Double(self.display) ?? 0.0), right: operand)
         self.accumulator = nil
         self.pendingOperation = nil
         self.entry = nil

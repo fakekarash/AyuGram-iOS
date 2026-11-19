@@ -98,7 +98,7 @@ public final class AyuGramCalculatorController: ViewController {
             background = AyuGramCalculatorController.digitColor
             titleColor = .white
         case .decimal:
-            title = ","
+            title = "."
             background = AyuGramCalculatorController.digitColor
             titleColor = .white
         case let .operation(operation):

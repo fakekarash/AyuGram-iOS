@@ -8,30 +8,30 @@ import Foundation
 public final class AyuGramCalculatorGateState {
     public static let shared = AyuGramCalculatorGateState()
 
-    private let lock = NSLock()
+    private let mutex = NSLock()
     private var locked: Bool = true
 
     public var isLocked: Bool {
-        self.lock.lock()
-        defer { self.lock.unlock() }
+        self.mutex.lock()
+        defer { self.mutex.unlock() }
         return self.locked
     }
 
     public func lock() {
-        self.lock.lock()
+        self.mutex.lock()
         let changed = !self.locked
         self.locked = true
-        self.lock.unlock()
+        self.mutex.unlock()
         if changed {
             self.notify()
         }
     }
 
     public func unlock() {
-        self.lock.lock()
+        self.mutex.lock()
         let changed = self.locked
         self.locked = false
-        self.lock.unlock()
+        self.mutex.unlock()
         if changed {
             self.notify()
         }
