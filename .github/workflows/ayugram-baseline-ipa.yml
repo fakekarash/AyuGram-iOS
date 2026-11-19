@@ -1,4 +1,4 @@
-﻿name: AyuGram iOS baseline IPA (manual)
+name: AyuGram iOS baseline IPA (manual)
 
 on:
   workflow_dispatch:
