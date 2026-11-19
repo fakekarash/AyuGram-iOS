@@ -46,9 +46,8 @@ jobs:
       - name: Parse AyuGram Swift sources
         run: |
           set -euo pipefail
-          mapfile -t sources < <(find submodules/TelegramCore/Sources/AyuGram submodules/SettingsUI/Sources -name '*AyuGram*.swift' -print)
-          printf 'Parsing %d AyuGram sources\n' "${#sources[@]}"
-          xcrun swiftc -frontend -parse "${sources[@]}"
+          # macOS ships bash 3.2, so no mapfile/readarray here.
+          find submodules/TelegramCore/Sources/AyuGram submodules/SettingsUI/Sources -name '*AyuGram*.swift' -print0 | xargs -0 xcrun swiftc -frontend -parse
           printf 'AyuGram sources parsed successfully\n'
 
       - name: Build sideload-compatible client
