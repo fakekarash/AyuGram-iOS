@@ -18,13 +18,27 @@ import ayugram_ci as baseline
 ROOT = Path(__file__).resolve().parent.parent
 ARTIFACTS = ROOT / "build" / "ayugram-sideload"
 DEFAULT_BUNDLE_ID = "com.fakekarash.ayugram"
-DEFAULT_DISPLAY_NAME = "Калькулятор"
+# CFBundleDisplayName stays ASCII: the value travels through workflow inputs and
+# environments that silently replace non-ASCII bytes. The human-facing Russian
+# name is shipped as a localisation instead (see LOCALIZED_DISPLAY_NAMES).
+DEFAULT_DISPLAY_NAME = "Calculator"
+LOCALIZED_DISPLAY_NAMES = {"ru": "Калькулятор"}
 CUSTOM_BUNDLE_ID = os.environ.get("AYUGRAM_BUNDLE_ID") or DEFAULT_BUNDLE_ID
 DISPLAY_NAME = os.environ.get("AYUGRAM_DISPLAY_NAME") or DEFAULT_DISPLAY_NAME
 if not re.fullmatch(r"[A-Za-z0-9.-]+", CUSTOM_BUNDLE_ID):
     raise RuntimeError("AYUGRAM_BUNDLE_ID must be a plain reverse-DNS identifier")
 if not DISPLAY_NAME.strip() or len(DISPLAY_NAME) > 32:
     raise RuntimeError("AYUGRAM_DISPLAY_NAME must be a short non-empty name")
+if not DISPLAY_NAME.isascii():
+    raise RuntimeError(
+        "AYUGRAM_DISPLAY_NAME must be ASCII; non-ASCII names are mangled by CI inputs. "
+        "Use AYUGRAM_DISPLAY_NAME_RU for the Russian name."
+    )
+if os.environ.get("AYUGRAM_DISPLAY_NAME_RU"):
+    LOCALIZED_DISPLAY_NAMES["ru"] = os.environ["AYUGRAM_DISPLAY_NAME_RU"]
+for _language, _name in LOCALIZED_DISPLAY_NAMES.items():
+    if not _name.strip() or len(_name) > 32:
+        raise RuntimeError("localized display name for %s must be a short non-empty name" % _language)
 PATCHES = (
     (ROOT / "submodules" / "TelegramUI", ROOT / "build-system" / "patches" / "sideload-telegramui.patch"),
     (ROOT / "submodules" / "PasscodeCore", ROOT / "build-system" / "patches" / "sideload-passcodecore.patch"),
@@ -148,6 +162,13 @@ def repackage():
                     data = plistlib.dumps(plist, fmt=plistlib.FMT_BINARY, sort_keys=False)
                 outgoing.writestr(info, data)
 
+            for language, localized_name in LOCALIZED_DISPLAY_NAMES.items():
+                contents = 'CFBundleDisplayName = "%s";\n' % localized_name
+                outgoing.writestr(
+                    app_root + language + ".lproj/InfoPlist.strings",
+                    contents.encode("utf-8"),
+                )
+
     temporary.replace(target)
     source.unlink()
     print("Created extension-free AyuGram.ipa with bundle id " + CUSTOM_BUNDLE_ID)
@@ -184,6 +205,18 @@ def verify():
             raise RuntimeError("Unexpected sideload bundle identifier")
         if info.get("CFBundleDisplayName") != DISPLAY_NAME:
             raise RuntimeError("Unexpected sideload application name")
+        if not str(info.get("CFBundleDisplayName") or "").isascii():
+            raise RuntimeError("CFBundleDisplayName must stay ASCII")
+        for language, localized_name in LOCALIZED_DISPLAY_NAMES.items():
+            localized_plist = app_root + language + ".lproj/InfoPlist.strings"
+            if localized_plist not in names:
+                raise RuntimeError("Missing localized application name for " + language)
+            localized_contents = archive.read(localized_plist).decode("utf-8")
+            if localized_name not in localized_contents:
+                raise RuntimeError("Localized application name for " + language + " is wrong")
+        alternate_icons = (info.get("CFBundleIcons") or {}).get("CFBundleAlternateIcons") or {}
+        if alternate_icons:
+            raise RuntimeError("The app must not advertise alternate Telegram icons")
         if info.get("CFBundleSupportedPlatforms") != ["iPhoneOS"]:
             raise RuntimeError("Expected an iPhoneOS device build")
         if info.get("UIFileSharingEnabled") is True or info.get("LSSupportsOpeningDocumentsInPlace") is True:

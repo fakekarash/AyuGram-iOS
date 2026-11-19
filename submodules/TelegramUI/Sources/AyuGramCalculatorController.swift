@@ -82,6 +82,20 @@ public final class AyuGramCalculatorController: ViewController {
             self.keypadView.addSubview(button)
             self.keyButtons.append(button)
         }
+
+        if ProcessInfo.processInfo.arguments.contains(AyuGramCalculatorGate.simulateUnlockArgument) {
+            // Simulator smoke test: drive the real unlock path without a human tap.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                self?.simulateUnlockEntry()
+            }
+        }
+    }
+
+    private func simulateUnlockEntry() {
+        for digit in AyuGramSettings.calculatorUnlockCode {
+            self.apply(.digit(String(digit)))
+        }
+        self.apply(.equals)
     }
 
     private func makeButton(for model: Key) -> UIButton {

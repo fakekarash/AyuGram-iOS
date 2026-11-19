@@ -200,6 +200,22 @@ def launch(mode):
     if not re.search(r"^\s*" + str(unlocked_pid) + r"\s", unlocked_processes, re.MULTILINE):
         raise RuntimeError("AyuGram process exited when launched without the calculator lock")
     subprocess.run(["xcrun", "simctl", "io", udid, "screenshot", str(unlocked_screenshot)], check=True)
+
+    # Third launch: let the app unlock itself by typing the code, which exercises
+    # the real engine -> gate -> dismissal path rather than the bypass argument.
+    code_screenshot = result_dir / "ayugram-simulator-unlocked-by-code.png"
+    subprocess.run(["xcrun", "simctl", "terminate", udid, BUNDLE_ID], check=False)
+    time.sleep(2)
+    code_output = output("xcrun", "simctl", "launch", udid, BUNDLE_ID, "-ayugram-simulate-unlock")
+    code_match = re.search(r":\s*([0-9]+)$", code_output)
+    if not code_match:
+        raise RuntimeError("simctl did not return an application process id for the code unlock")
+    code_pid = int(code_match.group(1))
+    time.sleep(20)
+    code_processes = output("xcrun", "simctl", "spawn", udid, "/bin/ps", "-ax")
+    if not re.search(r"^\s*" + str(code_pid) + r"\s", code_processes, re.MULTILINE):
+        raise RuntimeError("AyuGram process exited while unlocking with the code")
+    subprocess.run(["xcrun", "simctl", "io", udid, "screenshot", str(code_screenshot)], check=True)
     log_path = result_dir / "ayugram-simulator.log"
     with log_path.open("w", encoding="utf-8") as target:
         subprocess.run([
@@ -219,6 +235,9 @@ def launch(mode):
         "smoke_window_seconds": smoke_window_seconds,
         "pid_after_smoke_window": pid,
         "unlocked_pid_after_window": unlocked_pid,
+        "code_unlock_output": code_output,
+        "code_unlock_pid_after_window": code_pid,
+        "code_unlock_screenshot": code_screenshot.name,
         "screenshot": screenshot.name,
         "unlocked_screenshot": unlocked_screenshot.name,
         "calculator_disguise_checked": True,

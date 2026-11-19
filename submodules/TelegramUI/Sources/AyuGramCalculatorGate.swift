@@ -12,6 +12,8 @@ public final class AyuGramCalculatorGate {
 
     /// Used by the simulator smoke test to reach the app behind the disguise.
     public static let skipLaunchArgument = "-ayugram-skip-calculator-lock"
+    /// Used by the simulator smoke test to type the unlock code through the engine.
+    public static let simulateUnlockArgument = "-ayugram-simulate-unlock"
 
     private weak var controller: AyuGramCalculatorController?
 
