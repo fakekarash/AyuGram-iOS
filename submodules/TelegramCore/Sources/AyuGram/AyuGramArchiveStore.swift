@@ -65,13 +65,15 @@ public enum AyuGramArchiveStore {
         guard let data = try? Data(contentsOf: self.url(id: id)) else {
             return nil
         }
-        return try? JSONDecoder().decode(AyuGramArchiveRecord.self, from: data)
+        return AyuGramStorageCrypto.decode(AyuGramArchiveRecord.self, from: data)
     }
 
     private static func write(_ record: AyuGramArchiveRecord) {
         do {
             try self.ensureDirectory()
-            let data = try JSONEncoder().encode(record)
+            guard let data = AyuGramStorageCrypto.encode(record) else {
+                return
+            }
             try data.write(to: self.url(id: record.id), options: .atomic)
             self.applyProtection(to: self.url(id: record.id))
             if self.obtainMaintenancePermit() {
@@ -111,7 +113,7 @@ public enum AyuGramArchiveStore {
         }
         let cutoff = Int32(clamping: Int64(Date().timeIntervalSince1970) - Int64(retentionDays * 24 * 60 * 60))
         for url in urls where url.pathExtension.lowercased() == "json" {
-            guard let data = try? Data(contentsOf: url), let record = try? JSONDecoder().decode(AyuGramArchiveRecord.self, from: data) else {
+            guard let data = try? Data(contentsOf: url), let record = AyuGramStorageCrypto.decode(AyuGramArchiveRecord.self, from: data) else {
                 continue
             }
             let timestamp = record.isDeleted ? record.deletionTimestamp : (record.editTimestamps.last ?? record.messageTimestamp)
@@ -184,7 +186,7 @@ public enum AyuGramArchiveStore {
                       let data = try? Data(contentsOf: url) else {
                     return nil
                 }
-                return try? JSONDecoder().decode(AyuGramArchiveRecord.self, from: data)
+                return AyuGramStorageCrypto.decode(AyuGramArchiveRecord.self, from: data)
             }.sorted { lhs, rhs in
                 let lhsTimestamp = lhs.isDeleted ? lhs.deletionTimestamp : (lhs.editTimestamps.last ?? lhs.messageTimestamp)
                 let rhsTimestamp = rhs.isDeleted ? rhs.deletionTimestamp : (rhs.editTimestamps.last ?? rhs.messageTimestamp)
@@ -217,7 +219,7 @@ public enum AyuGramArchiveStore {
                 return
             }
             for url in urls where url.pathExtension.lowercased() == "json" {
-                guard let data = try? Data(contentsOf: url), let record = try? JSONDecoder().decode(AyuGramArchiveRecord.self, from: data), record.peerId == peerId else {
+                guard let data = try? Data(contentsOf: url), let record = AyuGramStorageCrypto.decode(AyuGramArchiveRecord.self, from: data), record.peerId == peerId else {
                     continue
                 }
                 try? FileManager.default.removeItem(at: url)

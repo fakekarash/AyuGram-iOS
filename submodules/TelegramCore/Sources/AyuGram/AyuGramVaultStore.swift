@@ -123,7 +123,8 @@ public enum AyuGramVaultStore {
                 authorTitle: message.author?.debugDisplayTitle
             )
             let data = try JSONEncoder().encode(item)
-            try data.write(to: self.metadataURL(for: item), options: .atomic)
+            let stored = AyuGramStorageCrypto.encrypt(data) ?? data
+            try stored.write(to: self.metadataURL(for: item), options: .atomic)
             self.applyProtection(to: self.metadataURL(for: item))
 
             DispatchQueue.main.async {
@@ -151,7 +152,7 @@ public enum AyuGramVaultStore {
             var result: [AyuGramVaultItem] = []
             var knownFiles = Set<String>()
             for url in urls where url.lastPathComponent.hasSuffix(self.metadataSuffix) {
-                guard let data = try? Data(contentsOf: url), let item = try? JSONDecoder().decode(AyuGramVaultItem.self, from: data) else {
+                guard let data = try? Data(contentsOf: url), let item = AyuGramStorageCrypto.decode(AyuGramVaultItem.self, from: data) else {
                     continue
                 }
                 guard FileManager.default.fileExists(atPath: item.fileURL.path) else {
