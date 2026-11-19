@@ -124,7 +124,8 @@ func _internal_flushDeferredReadReceipts(transaction: Transaction, stateManager:
     stateManager.notifyAppliedIncomingReadMessages([index.id])
 }
 
-func applyOutgoingReadMaxIndex(transaction: Transaction, index: MessageIndex, beginCountdownAt timestamp: Int32) {    let messageIds = transaction.applyOutgoingReadMaxIndex(index)
+func applyOutgoingReadMaxIndex(transaction: Transaction, index: MessageIndex, beginCountdownAt timestamp: Int32) {
+    let messageIds = transaction.applyOutgoingReadMaxIndex(index)
     if index.id.peerId.namespace == Namespaces.Peer.SecretChat {
         for id in messageIds {
             applySecretOutgoingMessageReadActions(transaction: transaction, id: id, beginCountdownAt: timestamp)
