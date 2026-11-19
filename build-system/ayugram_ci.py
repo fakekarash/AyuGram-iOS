@@ -157,13 +157,19 @@ def build():
                     "-k", keychain, "-P", "", "-T", "/usr/bin/codesign", "-T", "/usr/bin/security")
             run("security", "set-key-partition-list", "-S", "apple-tool:,apple:", "-s",
                 "-k", password, keychain)
-            run(sys.executable, "-u", "build-system/Make/Make.py",
+            # AYUGRAM_KEEP_GOING=1 reports every compile error in one run instead
+            # of stopping at the first failing target.
+            build_arguments = [
                 "--bazel=" + str(bazel_path()),
                 "--bazelUserRoot=" + str(Path(runner_temp()) / "ayugram-bazel"),
                 "build", "--configurationPath=" + str(config),
                 "--codesigningInformationPath=build-system/fake-codesigning",
                 "--configuration=" + build_configuration, "--buildNumber=" + (os.environ.get("GITHUB_RUN_NUMBER") or time.strftime("%Y%m%d%H%M")),
-                "--outputBuildArtifactsPath=" + str(ARTIFACTS))
+                "--outputBuildArtifactsPath=" + str(ARTIFACTS)
+            ]
+            if os.environ.get("AYUGRAM_KEEP_GOING") == "1":
+                build_arguments.insert(3, "--continueOnError")
+            run(sys.executable, "-u", "build-system/Make/Make.py", *build_arguments)
         finally:
             # Make.py generates an ignored Starlark configuration containing API values.
             (ROOT / "build-input/configuration-repository/variables.bzl").unlink(missing_ok=True)

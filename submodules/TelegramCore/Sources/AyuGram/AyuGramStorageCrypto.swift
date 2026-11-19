@@ -49,7 +49,7 @@ public enum AyuGramStorageCrypto {
         }
 
         // Another process in the same app group may have created the key first.
-        let retryQuery = [
+        let retryQuery: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: self.service,
             kSecAttrAccount as String: self.account,

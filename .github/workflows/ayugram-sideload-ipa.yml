@@ -1,4 +1,4 @@
-name: AyuGram iOS sideload IPA (manual)
+﻿name: AyuGram iOS sideload IPA (manual)
 
 on:
   workflow_dispatch:
