@@ -180,10 +180,8 @@ private enum AyuGramVaultEntry: ItemListNodeEntry {
     }
 }
 
-private func ayuGramVaultEntries(filter: AyuGramVaultFilter, query: String) -> [AyuGramVaultEntry] {
+private func ayuGramVaultEntries(items allItems: [AyuGramVaultItem], records allRecords: [AyuGramArchiveRecord], totalBytes: Int64, filter: AyuGramVaultFilter, query: String) -> [AyuGramVaultEntry] {
     let normalizedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-    let allItems = AyuGramVaultStore.items()
-    let allRecords = AyuGramArchiveStore.records()
     let items = allItems.filter { item in
         guard filter == .all || filter == .media else { return false }
         guard !normalizedQuery.isEmpty else { return true }
@@ -203,7 +201,7 @@ private func ayuGramVaultEntries(filter: AyuGramVaultFilter, query: String) -> [
     formatter.countStyle = .file
 
     var result: [AyuGramVaultEntry] = [
-        .summary("Файлов: \(allItems.count) · \(formatter.string(fromByteCount: allItems.reduce(0) { $0 + $1.byteCount }))\nЗаписей сообщений: \(allRecords.count)\nПоказано: \(items.count + records.count). Все данные находятся только на этом устройстве."),
+        .summary("Файлов: \(allItems.count) · \(formatter.string(fromByteCount: totalBytes))\nЗаписей сообщений: \(allRecords.count)\nПоказано: \(items.count + records.count). Все данные находятся только на этом устройстве."),
         .filter(filter.title),
         .search(query)
     ]
@@ -233,15 +231,40 @@ private func ayuGramVaultEntries(filter: AyuGramVaultFilter, query: String) -> [
     return result
 }
 
+private struct AyuGramVaultSnapshot {
+    var items: [AyuGramVaultItem] = []
+    var records: [AyuGramArchiveRecord] = []
+    var totalBytes: Int64 = 0
+}
+
 public func ayuGramVaultController(context: AccountContext) -> ViewController {
     let revision = ValuePromise<Int32>(0, ignoreRepeated: false)
     let revisionValue = Atomic<Int32>(value: 0)
     let filterValue = Atomic<AyuGramVaultFilter>(value: .all)
     let queryValue = Atomic<String>(value: "")
+    let snapshotValue = Atomic<AyuGramVaultSnapshot>(value: AyuGramVaultSnapshot())
     let controllerHolder = AyuGramVaultControllerHolder()
 
+    // Reading the vault decrypts one file per record, so it always happens off
+    // the main thread and the list only renders the cached snapshot.
+    let reload: (Bool) -> Void = { initial in
+        DispatchQueue.global(qos: .userInitiated).async {
+            let items = AyuGramVaultStore.items()
+            let records = AyuGramArchiveStore.records()
+            let totalBytes = items.reduce(Int64(0)) { $0 + $1.byteCount }
+            let _ = snapshotValue.modify { _ in
+                return AyuGramVaultSnapshot(items: items, records: records, totalBytes: totalBytes)
+            }
+            revision.set(revisionValue.modify { $0 + 1 })
+            if initial {
+                AyuGramSettings.lastKnownStoredItemCount = items.count + records.count
+            }
+        }
+    }
+    reload(true)
+
     let refresh: () -> Void = {
-        revision.set(revisionValue.modify { $0 + 1 })
+        reload(false)
     }
 
     let arguments = AyuGramVaultControllerArguments(open: { item in
@@ -406,7 +429,13 @@ public func ayuGramVaultController(context: AccountContext) -> ViewController {
         )
         let listState = ItemListNodeState(
             presentationData: itemPresentationData,
-            entries: ayuGramVaultEntries(filter: filterValue.with { $0 }, query: queryValue.with { $0 }),
+            entries: ayuGramVaultEntries(
+                items: snapshotValue.with { $0.items },
+                records: snapshotValue.with { $0.records },
+                totalBytes: snapshotValue.with { $0.totalBytes },
+                filter: filterValue.with { $0 },
+                query: queryValue.with { $0 }
+            ),
             style: .blocks,
             animateChanges: true
         )
