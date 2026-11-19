@@ -52,6 +52,22 @@ final class AyuGramSettingsTests: XCTestCase {
         XCTAssertFalse(AyuGramSettings.backgroundKeepAliveEnabled)
         XCTAssertTrue(AyuGramSettings.disableAds)
         XCTAssertFalse(AyuGramSettings.showEditedMessageMark)
+
+        XCTAssertTrue(AyuGramSettings.calculatorLockEnabled)
+        XCTAssertEqual(AyuGramSettings.calculatorUnlockCode, "2024")
+        XCTAssertTrue(AyuGramSettings.calculatorLockOnBackground)
+        XCTAssertTrue(AyuGramSettings.calculatorHideNotifications)
+    }
+
+    func testCalculatorUnlockCodeIsDigitsOnlyAndNeverEmpty() {
+        AyuGramSettings.calculatorUnlockCode = "12ab34"
+        XCTAssertEqual(AyuGramSettings.calculatorUnlockCode, "1234")
+
+        AyuGramSettings.calculatorUnlockCode = ""
+        XCTAssertEqual(AyuGramSettings.calculatorUnlockCode, "2024")
+
+        AyuGramSettings.calculatorUnlockCode = " 99 88 "
+        XCTAssertEqual(AyuGramSettings.calculatorUnlockCode, "9988")
     }
 
     func testTogglesRoundTrip() {

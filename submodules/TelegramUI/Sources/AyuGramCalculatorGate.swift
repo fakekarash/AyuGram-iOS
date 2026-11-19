@@ -26,7 +26,14 @@ public final class AyuGramCalculatorGate {
         if ProcessInfo.processInfo.arguments.contains(AyuGramCalculatorGate.skipLaunchArgument) {
             AyuGramCalculatorGateState.shared.unlock()
         }
-        guard AyuGramSettings.calculatorLockEnabled, AyuGramCalculatorGateState.shared.isLocked else {
+        guard AyuGramSettings.calculatorLockEnabled else {
+            // Turning the disguise off must also release the lock, otherwise local
+            // notifications would stay suppressed for the rest of the session.
+            AyuGramCalculatorGateState.shared.unlock()
+            self.dismissCalculator()
+            return
+        }
+        guard AyuGramCalculatorGateState.shared.isLocked else {
             self.dismissCalculator()
             return
         }
