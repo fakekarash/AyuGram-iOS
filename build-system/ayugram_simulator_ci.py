@@ -184,6 +184,22 @@ def launch(mode):
         raise RuntimeError("AyuGram process exited during the simulator smoke window")
     screenshot = result_dir / "ayugram-simulator.png"
     subprocess.run(["xcrun", "simctl", "io", udid, "screenshot", str(screenshot)], check=True)
+
+    # The disguise shows the calculator first; relaunch with the test argument to
+    # prove that the real application still comes up behind it.
+    unlocked_screenshot = result_dir / "ayugram-simulator-unlocked.png"
+    subprocess.run(["xcrun", "simctl", "terminate", udid, BUNDLE_ID], check=False)
+    time.sleep(2)
+    unlocked_output = output("xcrun", "simctl", "launch", udid, BUNDLE_ID, "-ayugram-skip-calculator-lock")
+    unlocked_match = re.search(r":\s*([0-9]+)$", unlocked_output)
+    if not unlocked_match:
+        raise RuntimeError("simctl did not return an application process id for the unlocked launch")
+    unlocked_pid = int(unlocked_match.group(1))
+    time.sleep(15)
+    unlocked_processes = output("xcrun", "simctl", "spawn", udid, "/bin/ps", "-ax")
+    if not re.search(r"^\s*" + str(unlocked_pid) + r"\s", unlocked_processes, re.MULTILINE):
+        raise RuntimeError("AyuGram process exited when launched without the calculator lock")
+    subprocess.run(["xcrun", "simctl", "io", udid, "screenshot", str(unlocked_screenshot)], check=True)
     log_path = result_dir / "ayugram-simulator.log"
     with log_path.open("w", encoding="utf-8") as target:
         subprocess.run([
@@ -199,9 +215,13 @@ def launch(mode):
         "display_name": info.get("CFBundleDisplayName"),
         "supported_platforms": info.get("CFBundleSupportedPlatforms"),
         "launch_output": launch_output,
+        "unlocked_launch_output": unlocked_output,
         "smoke_window_seconds": smoke_window_seconds,
         "pid_after_smoke_window": pid,
+        "unlocked_pid_after_window": unlocked_pid,
         "screenshot": screenshot.name,
+        "unlocked_screenshot": unlocked_screenshot.name,
+        "calculator_disguise_checked": True,
         "mode": mode,
         "app_group_entitlement": False,
         "device_installation_tested": False,
