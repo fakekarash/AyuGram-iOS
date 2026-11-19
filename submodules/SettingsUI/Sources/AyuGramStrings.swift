@@ -96,7 +96,8 @@ public struct AyuGramStrings {
             "При запуске приложение выглядит как калькулятор. Код разблокировки: \(code) — введите его и нажмите «=». Изменение кода пока недоступно, чтобы нельзя было запереть себя снаружи.",
             "The app opens as a calculator. Unlock code: \(code) — type it and press \"=\". Changing the code is not exposed yet so the app cannot be locked out by mistake."
         )
-    }    public var localNotifications: String { self.localized("Локальные уведомления", "Local notifications") }
+    }
+    public var localNotifications: String { self.localized("Локальные уведомления", "Local notifications") }
     public var backgroundKeepAlive: String { self.localized("Не выгружать из памяти", "Stay awake in background") }
     public var testNotification: String { self.localized("Проверить уведомление", "Test notification") }
     public var testNotificationBody: String { self.localized("Уведомления AyuGram работают", "AyuGram notifications are working") }
