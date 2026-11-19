@@ -26,8 +26,11 @@ Repeat each check after disabling its individual switch to verify the normal Tel
 1. In a channel with content protection enabled, long-press a photo or video and save it.
 2. Open a view-once photo, video, voice message, and video message.
 3. Reopen the same item. It should remain available locally.
-4. In the Files app, open **On My iPhone → AyuGram → AyuGram Vault** and verify the copied media.
-5. Disable **Local AyuGram Vault**, open another view-once item, and verify that no new file is added.
+4. Open **AyuGram → Шпион → Открыть хранилище** and verify the copied media there.
+   The vault is no longer exposed through the Files app; export uses the in-app
+   share sheet.
+5. Disable **AyuGram → Шпион → Сохранять одноразовые медиа**, open another
+   view-once item, and verify that no new file is added.
 
 ## Expected sideload limitations
 
