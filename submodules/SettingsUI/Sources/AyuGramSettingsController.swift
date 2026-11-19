@@ -1,4 +1,4 @@
-import Foundation
+﻿import Foundation
 import UIKit
 import Display
 import SwiftSignalKit
@@ -86,16 +86,16 @@ private enum AyuGramSettingsEntry: ItemListNodeEntry {
             return AyuGramHeaderItem(presentationData: presentationData, sectionId: self.section)
         case let .categoriesHeader(text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
-        case let .ghost(title, subtitle):
-            return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: self.categoryIcon(name: "moon.fill", presentationData: presentationData), title: title, label: "", additionalDetailLabel: subtitle, sectionId: self.section, style: .blocks, action: {
+        case let .ghost(title, _):
+            return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: self.categoryIcon(name: "moon.fill", presentationData: presentationData), title: title, label: "", sectionId: self.section, style: .blocks, action: {
                 arguments.openGhost()
             })
-        case let .spy(title, subtitle):
-            return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: self.categoryIcon(name: "eye.slash.fill", presentationData: presentationData), title: title, label: "", additionalDetailLabel: subtitle, sectionId: self.section, style: .blocks, action: {
+        case let .spy(title, _):
+            return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: self.categoryIcon(name: "eye.slash.fill", presentationData: presentationData), title: title, label: "", sectionId: self.section, style: .blocks, action: {
                 arguments.openSpy()
             })
-        case let .filters(title, subtitle):
-            return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: self.categoryIcon(name: "line.3.horizontal.decrease.circle.fill", presentationData: presentationData), title: title, label: "", additionalDetailLabel: subtitle, sectionId: self.section, style: .blocks, action: {
+        case let .filters(title, _):
+            return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: self.categoryIcon(name: "line.3.horizontal.decrease.circle.fill", presentationData: presentationData), title: title, label: "", sectionId: self.section, style: .blocks, action: {
                 arguments.openFilters()
             })
         case let .linksHeader(text):
@@ -157,3 +157,4 @@ public func ayuGramSettingsController(context: AccountContext) -> ViewController
     controller.navigationPresentation = .modal
     return controller
 }
+

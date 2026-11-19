@@ -138,6 +138,22 @@ public enum AyuGramSettings {
         set { self.setValue(newValue, "showDeletedMessageMarker") }
     }
 
+    /// AyuGram shows a configurable mark on messages it kept after deletion.
+    private static let deletedMarkPresets = ["🛡 AyuGram", "🧹", "🪦", "✖️", ""]
+
+    public static var deletedMarkPreset: Int {
+        get { min(max(0, self.integerValue("deletedMarkPreset", default: 0)), self.deletedMarkPresets.count - 1) }
+        set { self.setIntegerValue(min(max(0, newValue), self.deletedMarkPresets.count - 1), "deletedMarkPreset") }
+    }
+
+    public static var deletedMark: String {
+        return self.deletedMarkPresets[self.deletedMarkPreset]
+    }
+
+    public static var deletedMarkPresetCount: Int {
+        return self.deletedMarkPresets.count
+    }
+
     public static var deletionNotificationsEnabled: Bool {
         get { self.value("deletionNotificationsEnabled", default: true) }
         set { self.setValue(newValue, "deletionNotificationsEnabled") }

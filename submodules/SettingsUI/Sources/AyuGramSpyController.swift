@@ -12,13 +12,15 @@ import AccountContext
 private final class AyuGramSpyControllerArguments {
     let update: (AyuGramSpySetting, Bool) -> Void
     let cycleOpacity: () -> Void
+    let cycleDeletedMark: () -> Void
     let openFilters: () -> Void
     let openVault: () -> Void
     let testNotification: () -> Void
 
-    init(update: @escaping (AyuGramSpySetting, Bool) -> Void, cycleOpacity: @escaping () -> Void, openFilters: @escaping () -> Void, openVault: @escaping () -> Void, testNotification: @escaping () -> Void) {
+    init(update: @escaping (AyuGramSpySetting, Bool) -> Void, cycleOpacity: @escaping () -> Void, cycleDeletedMark: @escaping () -> Void, openFilters: @escaping () -> Void, openVault: @escaping () -> Void, testNotification: @escaping () -> Void) {
         self.update = update
         self.cycleOpacity = cycleOpacity
+        self.cycleDeletedMark = cycleDeletedMark
         self.openFilters = openFilters
         self.openVault = openVault
         self.testNotification = testNotification
@@ -52,6 +54,7 @@ private enum AyuGramSpyEntry: ItemListNodeEntry {
     case antiRecall(Bool)
     case editHistory(Bool)
     case deletedMarker(Bool)
+    case deletedMark(String)
     case deletionNotices(Bool)
     case systemNotices(Bool)
     case opacity(Int)
@@ -71,7 +74,7 @@ private enum AyuGramSpyEntry: ItemListNodeEntry {
 
     var section: ItemListSectionId {
         switch self {
-        case .antiRecall, .editHistory, .deletedMarker, .deletionNotices, .systemNotices, .opacity, .filters, .deletionFooter:
+        case .antiRecall, .editHistory, .deletedMarker, .deletedMark, .deletionNotices, .systemNotices, .opacity, .filters, .deletionFooter:
             return AyuGramSpySection.deletion.rawValue
         case .mediaHeader, .restricted, .viewOnce, .vault, .openVault, .mediaFooter:
             return AyuGramSpySection.media.rawValue
@@ -85,22 +88,23 @@ private enum AyuGramSpyEntry: ItemListNodeEntry {
         case .antiRecall: return 0
         case .editHistory: return 1
         case .deletedMarker: return 2
-        case .deletionNotices: return 3
-        case .systemNotices: return 4
-        case .opacity: return 5
-        case .filters: return 6
-        case .deletionFooter: return 7
-        case .mediaHeader: return 8
-        case .restricted: return 9
-        case .viewOnce: return 10
-        case .vault: return 11
-        case .openVault: return 12
-        case .mediaFooter: return 13
-        case .notificationsHeader: return 14
-        case .localNotifications: return 15
-        case .backgroundKeepAlive: return 16
-        case .testNotification: return 17
-        case .notificationsFooter: return 18
+        case .deletedMark: return 3
+        case .deletionNotices: return 4
+        case .systemNotices: return 5
+        case .opacity: return 6
+        case .filters: return 7
+        case .deletionFooter: return 8
+        case .mediaHeader: return 9
+        case .restricted: return 10
+        case .viewOnce: return 11
+        case .vault: return 12
+        case .openVault: return 13
+        case .mediaFooter: return 14
+        case .notificationsHeader: return 15
+        case .localNotifications: return 16
+        case .backgroundKeepAlive: return 17
+        case .testNotification: return 18
+        case .notificationsFooter: return 19
         }
     }
 
@@ -118,6 +122,9 @@ private enum AyuGramSpyEntry: ItemListNodeEntry {
             return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: strings.editHistory, value: value, sectionId: self.section, style: .blocks, updated: { arguments.update(.editHistory, $0) })
         case let .deletedMarker(value):
             return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: strings.deletedMarker, value: value, sectionId: self.section, style: .blocks, updated: { arguments.update(.deletedMarker, $0) })
+        case let .deletedMark(value):
+            let title = value.isEmpty ? "—" : value
+            return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: strings.deletedMark + ": " + title, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: arguments.cycleDeletedMark)
         case let .deletionNotices(value):
             return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: strings.deletionNotices, value: value, sectionId: self.section, style: .blocks, updated: { arguments.update(.deletionNotices, $0) })
         case let .systemNotices(value):
@@ -175,6 +182,7 @@ private func ayuGramSpyEntries(strings: AyuGramStrings) -> [AyuGramSpyEntry] {
         .antiRecall(AyuGramSettings.antiRecallEnabled),
         .editHistory(AyuGramSettings.editHistoryEnabled),
         .deletedMarker(AyuGramSettings.showDeletedMessageMarker),
+        .deletedMark(AyuGramSettings.deletedMark),
         .deletionNotices(AyuGramSettings.deletionNotificationsEnabled),
         .systemNotices(AyuGramSettings.systemDeletionNotificationsEnabled),
         .opacity(Int((AyuGramSettings.deletedMessageOpacity * 100.0).rounded())),
@@ -263,6 +271,9 @@ public func ayuGramSpyController(context: AccountContext) -> ViewController {
         } else {
             AyuGramSettings.deletedMessageOpacity = 0.40
         }
+        refresh()
+    }, cycleDeletedMark: {
+        AyuGramSettings.deletedMarkPreset = (AyuGramSettings.deletedMarkPreset + 1) % AyuGramSettings.deletedMarkPresetCount
         refresh()
     }, openFilters: {
         controllerHolder.controller?.push(ayuGramRetentionController(context: context))

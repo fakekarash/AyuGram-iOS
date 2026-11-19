@@ -415,5 +415,39 @@ public func ayuGramVaultController(context: AccountContext) -> ViewController {
 
     let result = ItemListController(context: context, state: signal)
     controllerHolder.controller = result
+    AyuGramVaultBackgroundLock.register(result)
     return result
+}
+
+/// Re-locks the vault: when the app goes to the background while the vault is
+/// open, the vault is popped so it has to pass the Face ID / Touch ID gate again.
+private final class AyuGramVaultBackgroundLock {
+    private weak var controller: ViewController?
+
+    static let shared = AyuGramVaultBackgroundLock()
+
+    private static let observer: NSObjectProtocol? = {
+        return NotificationCenter.default.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { _ in
+            guard AyuGramSettings.vaultBiometricLockEnabled else {
+                return
+            }
+            guard let controller = AyuGramVaultBackgroundLock.shared.controller else {
+                return
+            }
+            AyuGramVaultBackgroundLock.shared.controller = nil
+            if let navigationController = controller.navigationController as? NavigationController {
+                let _ = navigationController.popViewController(animated: false)
+            } else {
+                controller.dismiss(animated: false, completion: nil)
+            }
+        }
+    }()
+
+    static func register(_ controller: ViewController) {
+        _ = self.observer
+        guard AyuGramSettings.vaultBiometricLockEnabled else {
+            return
+        }
+        self.shared.controller = controller
+    }
 }

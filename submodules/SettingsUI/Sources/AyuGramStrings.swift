@@ -46,6 +46,7 @@ public struct AyuGramStrings {
     public var antiRecall: String { self.localized("Сохранять удалённые сообщения", "Keep deleted messages") }
     public var editHistory: String { self.localized("История редактирования", "Edit history") }
     public var deletedMarker: String { self.localized("Помечать удалённые сообщения", "Mark deleted messages") }
+    public var deletedMark: String { self.localized("Метка удалённого", "Deleted mark") }
     public var deletionNotices: String { self.localized("Уведомлять об удалении", "Notify about deletions") }
     public var systemNotices: String { self.localized("Системные уведомления", "System notifications") }
     public var opacity: String { self.localized("Видимость удалённых", "Deleted message opacity") }

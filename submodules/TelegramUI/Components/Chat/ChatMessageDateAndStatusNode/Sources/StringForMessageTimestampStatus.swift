@@ -254,7 +254,11 @@ public func stringForMessageTimestampStatus(
     if AyuGramSettings.showDeletedMessageMarker,
        let history = message.attributes.first(where: { $0 is AyuGramMessageHistoryAttribute }) as? AyuGramMessageHistoryAttribute,
        history.isDeleted {
-        return "🛡 AyuGram: удалено · \(dateText)"
+        let mark = AyuGramSettings.deletedMark
+        if mark.isEmpty {
+            return dateText
+        }
+        return "\(mark) · \(dateText)"
     }
 
     return dateText
