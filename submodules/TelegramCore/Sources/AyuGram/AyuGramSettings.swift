@@ -102,13 +102,20 @@ public enum AyuGramSettings {
     }
 
     public static var saveRestrictedContent: Bool {
-        get { self.value("saveRestrictedContent", default: true) }
+        get { self.value("saveRestrictedContent", default: false) }
         set { self.setValue(newValue, "saveRestrictedContent") }
     }
 
     public static var preserveViewOnceMedia: Bool {
-        get { self.value("preserveViewOnceMedia", default: true) }
+        get { self.value("preserveViewOnceMedia", default: false) }
         set { self.setValue(newValue, "preserveViewOnceMedia") }
+    }
+
+    /// Cached number of items kept in the local vault and archive. It is refreshed
+    /// in the background so that opening the settings screen never scans the disk.
+    public static var lastKnownStoredItemCount: Int {
+        get { self.integerValue("storedItemCount", default: 0) }
+        set { self.setIntegerValue(max(0, newValue), "storedItemCount") }
     }
 
     public static var vaultEnabled: Bool {

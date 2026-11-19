@@ -48,6 +48,31 @@ public enum AyuGramVaultStore {
 
     private static func ensureDirectory() throws {
         try FileManager.default.createDirectory(at: self.rootURL, withIntermediateDirectories: true)
+        self.applyProtection(to: self.rootURL)
+    }
+
+    /// Keeps vault contents out of iCloud/Finder backups and applies an explicit
+    /// data protection class. The directory itself already lives inside the app
+    /// sandbox; sharing the Documents folder is no longer enabled by the build.
+    private static func applyProtection(to url: URL) {
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        var mutableURL = url
+        try? mutableURL.setResourceValues(values)
+        try? FileManager.default.setAttributes([.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication], ofItemAtPath: url.path)
+    }
+
+    /// Maintenance rewrites the whole directory, so it is rate limited instead of
+    /// running after every single saved item.
+    private static func obtainMaintenancePermit() -> Bool {
+        let key = "org.ayugram.ios.vault.maintenance"
+        let now = Date().timeIntervalSince1970
+        let last = UserDefaults.standard.double(forKey: key)
+        if now - last < 300.0 {
+            return false
+        }
+        UserDefaults.standard.set(now, forKey: key)
+        return true
     }
 
     private static func metadataURL(for item: AyuGramVaultItem) -> URL {
@@ -84,6 +109,7 @@ public enum AyuGramVaultStore {
                 try fileManager.removeItem(at: destination)
             }
             try fileManager.copyItem(at: URL(fileURLWithPath: sourcePath), to: destination)
+            self.applyProtection(to: destination)
 
             let item = AyuGramVaultItem(
                 id: id,
@@ -98,12 +124,15 @@ public enum AyuGramVaultStore {
             )
             let data = try JSONEncoder().encode(item)
             try data.write(to: self.metadataURL(for: item), options: .atomic)
+            self.applyProtection(to: self.metadataURL(for: item))
 
             DispatchQueue.main.async {
                 NotificationCenter.default.post(name: .ayuGramVaultChanged, object: nil)
             }
-            DispatchQueue.global(qos: .utility).async {
-                self.performMaintenance()
+            if self.obtainMaintenancePermit() {
+                DispatchQueue.global(qos: .utility).async {
+                    self.performMaintenance()
+                }
             }
             return item
         }

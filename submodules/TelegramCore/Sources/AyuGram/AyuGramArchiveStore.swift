@@ -27,6 +27,30 @@ public enum AyuGramArchiveStore {
 
     private static func ensureDirectory() throws {
         try FileManager.default.createDirectory(at: self.rootURL, withIntermediateDirectories: true)
+        self.applyProtection(to: self.rootURL)
+    }
+
+    /// Archive records hold message text, so they are kept out of backups and get
+    /// an explicit data protection class.
+    private static func applyProtection(to url: URL) {
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        var mutableURL = url
+        try? mutableURL.setResourceValues(values)
+        try? FileManager.default.setAttributes([.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication], ofItemAtPath: url.path)
+    }
+
+    /// Retention cleanup scans and decodes every record, so it is rate limited
+    /// instead of running after each individual write.
+    private static func obtainMaintenancePermit() -> Bool {
+        let key = "org.ayugram.ios.archive.maintenance"
+        let now = Date().timeIntervalSince1970
+        let last = UserDefaults.standard.double(forKey: key)
+        if now - last < 300.0 {
+            return false
+        }
+        UserDefaults.standard.set(now, forKey: key)
+        return true
     }
 
     private static func recordId(message: Message) -> String {
@@ -49,7 +73,10 @@ public enum AyuGramArchiveStore {
             try self.ensureDirectory()
             let data = try JSONEncoder().encode(record)
             try data.write(to: self.url(id: record.id), options: .atomic)
-            self.performMaintenanceLocked()
+            self.applyProtection(to: self.url(id: record.id))
+            if self.obtainMaintenancePermit() {
+                self.performMaintenanceLocked()
+            }
             DispatchQueue.main.async {
                 NotificationCenter.default.post(name: .ayuGramArchiveChanged, object: nil)
             }

@@ -126,8 +126,11 @@ def repackage():
                     plist["CFBundleIdentifier"] = CUSTOM_BUNDLE_ID
                     plist["CFBundleDisplayName"] = "AyuGram"
                     plist["CFBundleName"] = "AyuGram"
-                    plist["UIFileSharingEnabled"] = True
-                    plist["LSSupportsOpeningDocumentsInPlace"] = True
+                    # The vault and the deleted-message archive live in Documents, so
+                    # the Documents folder must NOT be shared with the Files app or
+                    # Finder. Export is done with the in-app share sheet instead.
+                    plist.pop("UIFileSharingEnabled", None)
+                    plist.pop("LSSupportsOpeningDocumentsInPlace", None)
                     plist["CFBundleURLTypes"] = [
                         {
                             "CFBundleTypeRole": "Viewer",
@@ -176,8 +179,8 @@ def verify():
             raise RuntimeError("Unexpected sideload application name")
         if info.get("CFBundleSupportedPlatforms") != ["iPhoneOS"]:
             raise RuntimeError("Expected an iPhoneOS device build")
-        if info.get("UIFileSharingEnabled") is not True:
-            raise RuntimeError("AyuGram Vault is not exposed through iOS file sharing")
+        if info.get("UIFileSharingEnabled") is True or info.get("LSSupportsOpeningDocumentsInPlace") is True:
+            raise RuntimeError("AyuGram Vault must not be exposed through iOS file sharing")
         forbidden = [
             name for name in names
             if name.startswith(app_root + "PlugIns/")

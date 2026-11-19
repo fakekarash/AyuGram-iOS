@@ -43,6 +43,14 @@ jobs:
       - name: Apply reviewed sideload compatibility patches
         run: python3 build-system/ayugram_sideload_ci.py patch
 
+      - name: Parse AyuGram Swift sources
+        run: |
+          set -euo pipefail
+          mapfile -t sources < <(find submodules/TelegramCore/Sources/AyuGram submodules/SettingsUI/Sources -name '*AyuGram*.swift' -print)
+          printf 'Parsing %d AyuGram sources\n' "${#sources[@]}"
+          xcrun swiftc -frontend -parse "${sources[@]}"
+          printf 'AyuGram sources parsed successfully\n'
+
       - name: Build sideload-compatible client
         env:
           TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
