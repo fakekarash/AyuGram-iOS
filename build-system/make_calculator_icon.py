@@ -1,5 +1,8 @@
 """Render the calculator app icon used by the disguise.
 
+Matches the system Calculator icon: a light background, a dark calculator body
+with a pale display and a 4x3 key grid whose last column is orange.
+
 The output is a full-bleed 1024x1024 PNG consumed by
 Telegram/Telegram-iOS/Telegram.icon/Assets/Calculator.png (Icon Composer masks
 the shape itself, so the artwork covers the whole canvas).
@@ -13,52 +16,58 @@ import pathlib
 from PIL import Image, ImageDraw
 
 SIZE = 1024
-BACKGROUND = (17, 17, 20, 255)
-BODY = (216, 216, 220, 255)
-DISPLAY = (28, 28, 30, 255)
-DISPLAY_TEXT = (120, 200, 120, 255)
-KEY = (58, 58, 60, 255)
+BACKGROUND_TOP = (255, 255, 255, 255)
+BACKGROUND_BOTTOM = (238, 238, 242, 255)
+BODY = (44, 44, 46, 255)
+DISPLAY = (209, 209, 214, 255)
+KEY = (229, 229, 234, 255)
 OPERATOR = (255, 159, 10, 255)
 
-OUTPUT = pathlib.Path(__file__).resolve().parent.parent / "Telegram" / "Telegram-iOS" / "Telegram.icon" / "Assets" / "Calculator.png"
-
-
-def rounded_rect(draw, box, radius, fill):
-    draw.rounded_rectangle(box, radius=radius, fill=fill)
+OUTPUT = (
+    pathlib.Path(__file__).resolve().parent.parent
+    / "Telegram"
+    / "Telegram-iOS"
+    / "Telegram.icon"
+    / "Assets"
+    / "Calculator.png"
+)
 
 
 def main() -> int:
-    image = Image.new("RGBA", (SIZE, SIZE), BACKGROUND)
+    image = Image.new("RGBA", (SIZE, SIZE), BACKGROUND_TOP)
     draw = ImageDraw.Draw(image)
 
-    # Device body.
-    body = (196, 148, 828, 884)
-    rounded_rect(draw, body, 92, BODY)
+    # Soft vertical gradient so the icon does not look flat beside system icons.
+    for y in range(SIZE):
+        factor = y / (SIZE - 1)
+        color = tuple(
+            round(BACKGROUND_TOP[channel] + (BACKGROUND_BOTTOM[channel] - BACKGROUND_TOP[channel]) * factor)
+            for channel in range(3)
+        )
+        draw.line([(0, y), (SIZE, y)], fill=color + (255,))
+
+    # Calculator body.
+    body = (252, 178, 772, 846)
+    draw.rounded_rectangle(body, radius=118, fill=BODY)
 
     # Display.
-    rounded_rect(draw, (242, 194, 782, 330), 30, DISPLAY)
-    draw.rectangle((560, 236, 748, 262), fill=(232, 232, 234, 255))
-    draw.rectangle((620, 278, 748, 296), fill=(120, 120, 124, 255))
+    draw.rounded_rectangle((304, 238, 720, 366), radius=32, fill=DISPLAY)
 
-    # Keypad: four rows, four columns, the last column is the operator column.
-    diameter = 78
-    gap = 40
+    # Key grid: three pale columns and one orange column.
     columns = 4
-    rows = 4
-    grid_width = columns * diameter + (columns - 1) * gap
-    grid_height = rows * diameter + (rows - 1) * gap
+    rows = 3
+    key_side = 84
+    gap = 28
+    grid_width = columns * key_side + (columns - 1) * gap
     start_x = (SIZE - grid_width) // 2
-    start_y = 384 + (432 - grid_height) // 2
+    start_y = 428
 
     for row in range(rows):
         for column in range(columns):
-            center_x = start_x + column * (diameter + gap) + diameter // 2
-            center_y = start_y + row * (diameter + gap) + diameter // 2
+            x = start_x + column * (key_side + gap)
+            y = start_y + row * (key_side + gap)
             color = OPERATOR if column == columns - 1 else KEY
-            draw.ellipse(
-                (center_x - diameter // 2, center_y - diameter // 2, center_x + diameter // 2, center_y + diameter // 2),
-                fill=color,
-            )
+            draw.rounded_rectangle((x, y, x + key_side, y + key_side), radius=24, fill=color)
 
     image.save(OUTPUT, format="PNG")
     print("wrote", OUTPUT, image.size)

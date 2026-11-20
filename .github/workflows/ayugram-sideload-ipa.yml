@@ -11,6 +11,10 @@ on:
         description: Optional bundle id override; empty keeps com.fakekarash.ayugram
         required: false
         default: ''
+      url_scheme:
+        description: Optional URL scheme; empty keeps ayugram
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -74,6 +78,7 @@ jobs:
           AYUGRAM_KEEP_GOING: "1"
           AYUGRAM_DISPLAY_NAME: ${{ inputs.display_name }}
           AYUGRAM_BUNDLE_ID: ${{ inputs.bundle_id }}
+          AYUGRAM_URL_SCHEME: ${{ inputs.url_scheme }}
           TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
           TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
         run: python3 -u build-system/ayugram_sideload_ci.py build

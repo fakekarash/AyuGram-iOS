@@ -30,6 +30,10 @@ if _environment_display_name and not _environment_display_name.isascii():
         "Leave it empty to use the built-in Russian name."
     )
 DISPLAY_NAME = _environment_display_name or DEFAULT_DISPLAY_NAME
+DEFAULT_URL_SCHEME = "ayugram"
+URL_SCHEME = os.environ.get("AYUGRAM_URL_SCHEME") or DEFAULT_URL_SCHEME
+if not re.fullmatch(r"[a-z][a-z0-9]+", URL_SCHEME):
+    raise RuntimeError("AYUGRAM_URL_SCHEME must be a lowercase scheme name")
 if not re.fullmatch(r"[A-Za-z0-9.-]+", CUSTOM_BUNDLE_ID):
     raise RuntimeError("AYUGRAM_BUNDLE_ID must be a plain reverse-DNS identifier")
 if not DISPLAY_NAME.strip() or len(DISPLAY_NAME) > 32:
@@ -151,7 +155,7 @@ def repackage():
                         {
                             "CFBundleTypeRole": "Viewer",
                             "CFBundleURLName": CUSTOM_BUNDLE_ID,
-                            "CFBundleURLSchemes": ["ayugram"],
+                            "CFBundleURLSchemes": [URL_SCHEME],
                         }
                     ]
                     data = plistlib.dumps(plist, fmt=plistlib.FMT_BINARY, sort_keys=False)
@@ -230,6 +234,7 @@ def verify():
         "runner_image": os.environ.get("ImageVersion"),
         "bundle_id": CUSTOM_BUNDLE_ID,
         "display_name": DISPLAY_NAME,
+        "url_scheme": URL_SCHEME,
         "patches": patch_hashes,
         "ipa_sha256": hashlib.sha256(ipa.read_bytes()).hexdigest(),
         "ipa_bytes": ipa.stat().st_size,
