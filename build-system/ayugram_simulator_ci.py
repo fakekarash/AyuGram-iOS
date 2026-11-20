@@ -216,6 +216,21 @@ def launch(mode):
     if not re.search(r"^\s*" + str(code_pid) + r"\s", code_processes, re.MULTILINE):
         raise RuntimeError("AyuGram process exited while unlocking with the code")
     subprocess.run(["xcrun", "simctl", "io", udid, "screenshot", str(code_screenshot)], check=True)
+
+    # Fourth launch: screenshot the scientific keypad.
+    scientific_screenshot = result_dir / "ayugram-simulator-scientific.png"
+    subprocess.run(["xcrun", "simctl", "terminate", udid, BUNDLE_ID], check=False)
+    time.sleep(2)
+    scientific_output = output("xcrun", "simctl", "launch", udid, BUNDLE_ID, "-ayugram-show-scientific")
+    scientific_match = re.search(r":\s*([0-9]+)$", scientific_output)
+    if not scientific_match:
+        raise RuntimeError("simctl did not return an application process id for the scientific launch")
+    scientific_pid = int(scientific_match.group(1))
+    time.sleep(10)
+    scientific_processes = output("xcrun", "simctl", "spawn", udid, "/bin/ps", "-ax")
+    if not re.search(r"^\s*" + str(scientific_pid) + r"\s", scientific_processes, re.MULTILINE):
+        raise RuntimeError("AyuGram process exited in the scientific screenshot launch")
+    subprocess.run(["xcrun", "simctl", "io", udid, "screenshot", str(scientific_screenshot)], check=True)
     log_path = result_dir / "ayugram-simulator.log"
     with log_path.open("w", encoding="utf-8") as target:
         subprocess.run([
@@ -238,6 +253,7 @@ def launch(mode):
         "code_unlock_output": code_output,
         "code_unlock_pid_after_window": code_pid,
         "code_unlock_screenshot": code_screenshot.name,
+        "scientific_screenshot": scientific_screenshot.name,
         "screenshot": screenshot.name,
         "unlocked_screenshot": unlocked_screenshot.name,
         "calculator_disguise_checked": True,

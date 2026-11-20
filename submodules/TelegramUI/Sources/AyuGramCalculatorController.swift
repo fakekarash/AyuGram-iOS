@@ -131,6 +131,10 @@ public final class AyuGramCalculatorController: ViewController {
         self.historyTextView.showsVerticalScrollIndicator = false
         self.historyView.addSubview(self.historyTextView)
 
+        if ProcessInfo.processInfo.arguments.contains(AyuGramCalculatorGate.showScientificArgument) {
+            self.isScientific = true
+        }
+
         self.rebuildKeys()
         self.updateDisplay()
 
