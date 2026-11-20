@@ -28,13 +28,15 @@
 
 | Параметр | Значение |
 | --- | --- |
-| Файл | `AyuGram.ipa`, 76 272 592 байт |
-| SHA-256 | `20f127583627ac6b00a9eee5af5b3f7c480462f6aa8d4e6b89e989b618f9ec95` |
-| Commit | `c406b05fbcdb3aa5856dd6eb2c7307fce09af8b0` |
-| Сборка | `ayugram-ci-runner` run `44571722299`, шаги «Build» и «Validate» зелёные |
+| Файл | `AyuGram-Calculator-1.2.0.ipa`, 75 415 591 байт |
+| SHA-256 | `1fde0f75713df7520e976437880de56f9a6c531ae9421fb0dd1d33de1672f401` |
+| Commit | `e4f2d28d50fafc8ab47cf0983fbb11d8b687b19e` |
+| Сборка | `ayugram-ci-runner` run `44638469069`, шаги «Build» и «Validate» зелёные |
 | Bundle id | `com.fakekarash.ayugram`, версия 13.0 (build 11) |
+| Имя | `CFBundleDisplayName` = `Калькулятор`, альтернативных иконок нет |
 | Платформа | iPhoneOS, ARM64, без расширений, без `UIFileSharingEnabled` |
 | Креденшелы | вшиты реальные `api_id`/`api_hash` (подтверждено наличием хеша в `TelegramUIFramework`) |
+| Симулятор | run `44622525033`: калькулятор, приложение за ним и разблокировка кодом — три скриншота, все прошли валидацию |
 
 ## Оформление
 
