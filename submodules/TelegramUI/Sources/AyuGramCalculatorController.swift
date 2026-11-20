@@ -362,14 +362,14 @@ public final class AyuGramCalculatorController: ViewController {
         if self.isHistoryVisible {
             self.reloadHistory()
         }
-        self.view.setNeedsLayout()
+        self.requestLayout(transition: .immediate)
     }
 
     @objc private func scientificTapped() {
         self.isScientific.toggle()
         self.rebuildKeys()
         self.updateDisplay()
-        self.view.setNeedsLayout()
+        self.requestLayout(transition: .immediate)
     }
 
     private func reloadHistory() {
@@ -426,9 +426,11 @@ public final class AyuGramCalculatorController: ViewController {
         case .second:
             self.engine.toggleSecondFunction()
             self.rebuildKeys()
+            self.requestLayout(transition: .immediate)
         case .angleUnit:
             self.engine.toggleAngleUnit()
             self.rebuildKeys()
+            self.requestLayout(transition: .immediate)
         case .memoryClear:
             self.engine.memoryClear()
         case .memoryAdd:
