@@ -476,7 +476,7 @@ public final class AyuGramCalculatorEngine {
         return text
     }
 
-    static func render(_ tokens: [Token]) -> String {
+    private static func render(_ tokens: [Token]) -> String {
         var result = ""
         for token in tokens {
             switch token {
@@ -496,7 +496,7 @@ public final class AyuGramCalculatorEngine {
             case .power:
                 result += "^"
             case .function(let function):
-                result += functionSymbol(function) + "("
+                result += functionSymbol(function)
             case .openParenthesis:
                 result += "("
             case .closeParenthesis:
@@ -506,18 +506,18 @@ public final class AyuGramCalculatorEngine {
         return result.isEmpty ? "0" : result
     }
 
-    static func functionSymbol(_ function: AyuGramCalculatorFunction) -> String {
+    private static func functionSymbol(_ function: AyuGramCalculatorFunction) -> String {
         switch function {
         case .square:
-            return "^(2)"
+            return "sqr"
         case .cube:
-            return "^(3)"
+            return "cube"
         case .exponential:
-            return "e^"
+            return "exp"
         case .tenPower:
-            return "10^"
+            return "exp10"
         case .reciprocal:
-            return "1/"
+            return "inv"
         case .squareRoot:
             return "√"
         case .cubeRoot:
@@ -527,7 +527,7 @@ public final class AyuGramCalculatorEngine {
         case .log10:
             return "log10"
         case .factorial:
-            return "!"
+            return "fact"
         case .percent:
             return "%"
         case .sine:
@@ -551,7 +551,7 @@ public final class AyuGramCalculatorEngine {
         }
     }
 
-    enum EvaluationResult {
+    private enum EvaluationResult {
         case success(Double)
         case failure
     }
@@ -587,7 +587,7 @@ public final class AyuGramCalculatorEngine {
         }
     }
 
-    static func evaluate(_ tokens: [Token], angleUnit: AyuGramCalculatorAngleUnit) -> EvaluationResult {
+    private static func evaluate(_ tokens: [Token], angleUnit: AyuGramCalculatorAngleUnit) -> EvaluationResult {
         var output: [RPNItem] = []
         var stack: [Token] = []
 

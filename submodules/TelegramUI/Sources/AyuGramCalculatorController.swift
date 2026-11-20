@@ -269,7 +269,12 @@ public final class AyuGramCalculatorController: ViewController {
         case .second:
             return "2nd"
         case .angleUnit:
-            return self.engine.angleUnit == .degrees ? "Rad" : "Deg"
+            switch self.engine.angleUnit {
+            case .degrees:
+                return "Rad"
+            case .radians:
+                return "Deg"
+            }
         case .memoryClear:
             return "mc"
         case .memoryAdd:
